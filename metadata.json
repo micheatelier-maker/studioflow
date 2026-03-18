@@ -1,0 +1,7 @@
+{
+  "name": "Studio Flow",
+  "description": "An iOS-inspired voice-first session logger for creatives. Uses Gemini to transcribe and extract structured project insights from voice memos.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
