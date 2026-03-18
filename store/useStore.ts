@@ -54,6 +54,11 @@ const initialState: AppState = {
     deadlines: [],
     isOnboarded: true,
   },
+  tickets: {
+    remaining: 3,
+    totalUsed: 0,
+    lastResetDate: new Date().toISOString().split('T')[0]
+  },
   user: { email: 'creative@example.com', isAuthenticated: true }
 };
 
@@ -253,9 +258,30 @@ export const useStore = () => {
     });
   };
 
+  const consumeTickets = (amount: number = 1) => {
+    setState(prev => ({
+      ...prev,
+      tickets: {
+        ...prev.tickets,
+        remaining: Math.max(0, prev.tickets.remaining - amount),
+        totalUsed: prev.tickets.totalUsed + amount
+      }
+    }));
+  };
+
+  const addTickets = (amount: number = 1) => {
+    setState(prev => ({
+      ...prev,
+      tickets: {
+        ...prev.tickets,
+        remaining: prev.tickets.remaining + amount
+      }
+    }));
+  };
+
   return { 
     state, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProject, updateProject, updateProjectPhases, addLog, updateLog, reorderProjects,
     archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, 
-    updateScheduleItem, removeScheduleItem, toggleReminder, addProtocolLog
+    updateScheduleItem, removeScheduleItem, toggleReminder, addProtocolLog, consumeTickets, addTickets
   };
 };

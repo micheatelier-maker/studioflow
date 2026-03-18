@@ -107,6 +107,7 @@ export interface ArtistProfile {
   upcomingProjects: string[];
   // Added deadlines to handle studio meta-goals within the profile
   deadlines: { id: string; title: string; date: string }[];
+  isOnboarded: boolean;
 }
 
 export interface ProtocolLog {
