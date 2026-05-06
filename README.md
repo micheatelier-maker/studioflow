@@ -1,20 +1,23 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Studio Flow
 
-# Run and deploy your AI Studio app
+A studio assistant for artists and creatives.
 
-This contains everything you need to run your app locally.
+## Vercel Deployment
 
-View your app in AI Studio: https://ai.studio/apps/f5377a4d-1b57-428d-84b1-eedf1d64313b
+To deploy this project to Vercel, follow these steps:
 
-## Run Locally
+1.  **Push to GitHub:** Push the current codebase to a GitHub repository.
+2.  **Connect to Vercel:** Create a new project on Vercel and connect it to your GitHub repository.
+3.  **Configure Environment Variables:** In the Vercel project settings, add the following environment variable:
+    -   `GEMINI_API_KEY`: Your Google Gemini API key.
+4.  **Deploy:** Trigger a new deployment.
 
-**Prerequisites:**  Node.js
+## Local Development
 
+1.  `npm install`
+2.  `cp .env.example .env` (and add your `GEMINI_API_KEY`)
+3.  `npm run dev`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Build
+
+`npm run build`
