@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AppState, Project, WorkshopLog, ScheduleItem, BlockStrategy } from '../types';
 import BlockRemoverSession from './BlockRemoverSession';
 import TicketDisplay from './TicketDisplay';
-import { DEEP_DIVE_QUESTIONS } from './LogForm.tsx';
+import { DEEP_DIVE_QUESTIONS } from './LogForm';
 
 interface DashboardProps {
   state: AppState;
