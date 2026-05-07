@@ -11,7 +11,6 @@ import FlowSession from './components/FlowSession';
 import ProjectLedger from './components/ProjectLedger';
 import Vault from './components/Vault';
 import SchedulePage from './components/SchedulePage';
-import PasswordGate from './components/PasswordGate';
 import { useStore } from './store/useStore';
 import { WorkshopLog, LogType, Project, ProjectStatus, ScheduleItem, ProjectPhase } from './types';
 
@@ -87,8 +86,7 @@ const App: React.FC = () => {
   const currentActiveProject = activeProjects.find(p => p.id === activeProjectInView);
 
   return (
-    <PasswordGate>
-      <div className="bg-[#0f0d0c] min-h-screen text-stone-100 selection:bg-orange-900/40">
+    <div className="bg-[#0f0d0c] min-h-screen text-stone-100 selection:bg-orange-900/40">
         <Layout 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -309,7 +307,6 @@ const App: React.FC = () => {
           />
         )}
       </div>
-    </PasswordGate>
   );
 };
 
