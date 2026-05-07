@@ -33,10 +33,10 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
   };
 
 
-  if (isAuthenticated === null) return "AH shiiiiiet this ain't workin";
+  if (isAuthenticated === null) return null;
 
   if (isAuthenticated) {
-    return <>{children}</>;
+    return children;
   }
   
 
