@@ -22,7 +22,7 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'lambchop.makes') {
+    if (password === 'password') {
       setIsAuthenticated(true);
       localStorage.setItem('studio_flow_auth', 'true');
       setError(false);
@@ -33,7 +33,7 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
   };
 
 
-  if (isAuthenticated === null) return "AH shiiiiiet this ain't workin";
+  if (isAuthenticated === null) return "ERROR! ERROR! ALERT ALERT!! ERRORRR!!!";
 
   if (isAuthenticated) {
     return {children} ;
@@ -82,7 +82,7 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
                   exit={{ opacity: 0, height: 0 }}
                   className="text-rose-500 text-[10px] font-black uppercase tracking-widest text-center pt-2"
                 >
-                  Invalid Access Key
+                  Invalid Password
                 </motion.p>
               )}
             </AnimatePresence>
