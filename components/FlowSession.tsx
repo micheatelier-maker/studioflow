@@ -76,6 +76,14 @@ const FlowSession: React.FC<FlowSessionProps> = ({
       if (timerRef.current) clearInterval(timerRef.current);
       stopAudioCapture();
       if (blobAnimationFrameRef.current) cancelAnimationFrame(blobAnimationFrameRef.current);
+      
+      // Reset state if session is explicitly ended
+      if (!isFlowActive) {
+        setSeconds(0);
+        setSeeds([]);
+        setIsProcessing(false);
+        setIsPaused(false);
+      }
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
