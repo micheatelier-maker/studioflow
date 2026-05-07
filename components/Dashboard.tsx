@@ -251,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const labelClasses = "block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] mb-2 ml-1";
 
   return (
-    <div className="flex flex-col gap-6 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-8 pt-8 pb-32 animate-in fade-in slide-in-from-bottom-6 duration-1000 no-scrollbar overflow-x-hidden relative items-start">
+    <div className="space-y-6 pt-8 pb-32 animate-in fade-in slide-in-from-bottom-6 duration-1000 no-scrollbar overflow-x-hidden relative">
       {/* Global Warm Glow Background Overlay */}
       <div className={`fixed inset-0 bg-rose-950/20 transition-opacity duration-1000 pointer-events-none z-0 ${isWarmGlow ? 'opacity-100' : 'opacity-0'}`}></div>
 
@@ -685,7 +685,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Thick Separator */}
-      <div className="py-12 flex items-center justify-center md:hidden">
+      <div className="py-12 flex items-center justify-center">
         <div className="w-12 h-px bg-stone-800/40"></div>
         <div className="w-2 h-2 rounded-full bg-stone-800/20 mx-4"></div>
         <div className="w-12 h-px bg-stone-800/40"></div>
@@ -1118,11 +1118,11 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600/5 blur-[40px] rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
             <div className="space-y-1 relative z-10">
               <h4 className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">AI Capacity</h4>
-              <p className="text-stone-100 text-sm font-black tracking-tight">Studio Ear Tokens Left</p>
+              <p className="text-stone-100 text-sm font-black tracking-tight">Weekly AI Tokens Used</p>
             </div>
             <div className="text-right relative z-10">
-              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.remaining}</span>
-              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">Available</span>
+              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.totalUsed}</span>
+              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">In Flow</span>
             </div>
           </div>
         </div>

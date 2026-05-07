@@ -300,7 +300,7 @@ const App: React.FC = () => {
             initialData={extractedData} 
             projects={state.projects} 
             onSave={handleSaveLog} 
-            onCancel={() => { setExtractedData(null); setIsDeepDiveMode(false); setIsFlowRunning(false); }} 
+            onCancel={() => { setExtractedData(null); setIsDeepDiveMode(false); }} 
             isFreshSession={isFreshLog} 
             latestEnergyLevel={latestEnergyLevel} 
             startWithDeepDive={isDeepDiveMode}

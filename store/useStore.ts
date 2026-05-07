@@ -55,7 +55,7 @@ const initialState: AppState = {
     isOnboarded: true,
   },
   tickets: {
-    remaining: 20,
+    remaining: 3,
     totalUsed: 0,
     lastResetDate: new Date().toISOString().split('T')[0]
   },
@@ -69,21 +69,9 @@ export const useStore = () => {
       if (!saved) return initialState;
       
       const parsed = JSON.parse(saved);
-      // Ensure all top-level keys exist by merging with initialState
+      // Basic validation: ensure it has the expected top-level keys
       if (parsed && typeof parsed === 'object' && 'projects' in parsed) {
-        return {
-          ...initialState,
-          ...parsed,
-          // Deep merge the tickets especially if it was missing or partially present
-          tickets: {
-            ...initialState.tickets,
-            ...(parsed.tickets || {})
-          },
-          artistProfile: {
-            ...initialState.artistProfile,
-            ...(parsed.artistProfile || {})
-          }
-        };
+        return parsed;
       }
       return initialState;
     } catch (error) {
@@ -91,21 +79,6 @@ export const useStore = () => {
       return initialState;
     }
   });
-
-  // Daily Ticket Reset Logic
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    if (state.tickets.lastResetDate !== today) {
-      setState(prev => ({
-        ...prev,
-        tickets: {
-          remaining: Math.max(prev.tickets.remaining, 10), // Refill to 10 if below 10
-          totalUsed: prev.tickets.totalUsed,
-          lastResetDate: today
-        }
-      }));
-    }
-  }, [state.tickets.lastResetDate]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
