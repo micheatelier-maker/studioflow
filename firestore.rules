@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Match for user documents (Profile)
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) 
+        && incoming().keys().hasAll(['stageName', 'discipline', 'disciplineColor', 'style', 'styleColor', 'isOnboarded']);
+      
+      // Projects subcollection
+      match /projects/{projectId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(projectId)
+          && incoming().name is string && incoming().name.size() <= 200;
+        allow delete: if isOwner(userId);
+      }
+
+      // Logs subcollection
+      match /logs/{logId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(logId)
+          && incoming().project_id is string;
+        allow delete: if isOwner(userId);
+      }
+
+      // Schedule subcollection
+      match /schedule/{scheduleId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(scheduleId);
+        allow delete: if isOwner(userId);
+      }
+
+      // Energy subcollection
+      match /energy/{energyId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(energyId);
+        allow delete: if isOwner(userId);
+      }
+
+      // Strategies subcollection
+      match /strategies/{strategyId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(strategyId);
+        allow delete: if isOwner(userId);
+      }
+
+      // Protocol Logs subcollection
+      match /protocolLogs/{protocolLogId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(protocolLogId);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

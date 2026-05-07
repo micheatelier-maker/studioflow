@@ -1,5 +1,78 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppState, Project, WorkshopLog, ArtistProfile, ProjectStatus, ProjectInsight, ScheduleItem, EnergyCheckIn, ProjectPhase, BlockStrategy, ProtocolLog } from '../types';
+import { db, auth } from '../services/firebase';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  collection, 
+  onSnapshot, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  orderBy,
+  getDocFromServer,
+} from 'firebase/firestore';
+import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
 
 const STORAGE_KEY = 'workshop_flow_state_v8'; // Bumped version for new schema
 
@@ -63,13 +136,13 @@ const initialState: AppState = {
 };
 
 export const useStore = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [state, setState] = useState<AppState>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return initialState;
-      
       const parsed = JSON.parse(saved);
-      // Basic validation: ensure it has the expected top-level keys
       if (parsed && typeof parsed === 'object' && 'projects' in parsed) {
         return parsed;
       }
@@ -80,24 +153,145 @@ export const useStore = () => {
     }
   });
 
+  // Handle Auth
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user || null);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const signIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
+    } catch (error) {
+      console.error("Sign in failed:", error);
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      throw error;
+    }
+  };
+
+  // Sync state to LocalStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const addEnergyCheckIn = (level: number, note: string) => {
+  // Load from Firestore when user is authenticated
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const userId = currentUser.uid;
+    const userDocRef = doc(db, 'users', userId);
+
+    setIsSyncing(true);
+
+    // Profile listener
+    const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tickets) {
+          setState(prev => ({ 
+            ...prev, 
+            artistProfile: { ...prev.artistProfile, ...data as ArtistProfile },
+            tickets: { ...prev.tickets, ...data.tickets }
+          }));
+        } else {
+          setState(prev => ({ ...prev, artistProfile: { ...prev.artistProfile, ...data as ArtistProfile } }));
+        }
+      }
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}`));
+
+    // Projects listener
+    const unsubProjects = onSnapshot(collection(db, 'users', userId, 'projects'), (snap) => {
+      const projects: Project[] = [];
+      snap.forEach(doc => projects.push(doc.data() as Project));
+      setState(prev => ({ ...prev, projects }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/projects`));
+
+    // Logs listener
+    const unsubLogs = onSnapshot(collection(db, 'users', userId, 'logs'), (snap) => {
+      const logs: WorkshopLog[] = [];
+      snap.forEach(doc => logs.push(doc.data() as WorkshopLog));
+      setState(prev => ({ ...prev, logs }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/logs`));
+
+    // Schedule listener
+    const unsubSchedule = onSnapshot(collection(db, 'users', userId, 'schedule'), (snap) => {
+      const schedule: ScheduleItem[] = [];
+      snap.forEach(doc => schedule.push(doc.data() as ScheduleItem));
+      setState(prev => ({ ...prev, schedule }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/schedule`));
+
+    // Energy listener
+    const unsubEnergy = onSnapshot(collection(db, 'users', userId, 'energy'), (snap) => {
+      const energyHistory: EnergyCheckIn[] = [];
+      snap.forEach(doc => energyHistory.push(doc.data() as EnergyCheckIn));
+      setState(prev => ({ ...prev, energyHistory }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/energy`));
+
+    // Protocol Logs listener
+    const unsubProtLogs = onSnapshot(collection(db, 'users', userId, 'protocolLogs'), (snap) => {
+      const protocolLogs: ProtocolLog[] = [];
+      snap.forEach(doc => protocolLogs.push(doc.data() as ProtocolLog));
+      setState(prev => ({ ...prev, protocolLogs }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/protocolLogs`));
+
+    // Strategies listener
+    const unsubStrategies = onSnapshot(collection(db, 'users', userId, 'strategies'), (snap) => {
+      const blockStrategies: BlockStrategy[] = [];
+      snap.forEach(doc => blockStrategies.push(doc.data() as BlockStrategy));
+      // Merge with initial strategies if none found or keep existing
+      setState(prev => ({ 
+        ...prev, 
+        blockStrategies: blockStrategies.length > 0 ? blockStrategies : prev.blockStrategies 
+      }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/strategies`));
+
+    return () => {
+      unsubProfile();
+      unsubProjects();
+      unsubLogs();
+      unsubSchedule();
+      unsubEnergy();
+      unsubProtLogs();
+      unsubStrategies();
+    };
+  }, [currentUser]);
+
+  const addEnergyCheckIn = async (level: number, note: string) => {
     const checkIn: EnergyCheckIn = {
       id: Math.random().toString(36).substr(2, 9),
       level,
       note,
       date: new Date().toISOString()
     };
-    setState(prev => ({
-      ...prev,
-      energyHistory: [checkIn, ...prev.energyHistory].slice(0, 50)
-    }));
+    
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/energy/${checkIn.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'energy', checkIn.id), checkIn);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        energyHistory: [checkIn, ...prev.energyHistory].slice(0, 50)
+      }));
+    }
   };
 
-  const addBlockStrategy = (name: string, description: string, duration: number, energy_required: number = 3, simplicity: number = 3) => {
+  const addBlockStrategy = async (name: string, description: string, duration: number, energy_required: number = 3, simplicity: number = 3) => {
     const strategy: BlockStrategy = {
       id: Math.random().toString(36).substr(2, 9),
       name: name.trim(),
@@ -107,27 +301,55 @@ export const useStore = () => {
       energy_required,
       simplicity
     };
-    setState(prev => ({
-      ...prev,
-      blockStrategies: [...prev.blockStrategies, strategy]
-    }));
+
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/strategies/${strategy.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'strategies', strategy.id), strategy);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        blockStrategies: [...prev.blockStrategies, strategy]
+      }));
+    }
   };
 
-  const updateBlockStrategy = (id: string, updates: Partial<BlockStrategy>) => {
-    setState(prev => ({
-      ...prev,
-      blockStrategies: prev.blockStrategies.map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
+  const updateBlockStrategy = async (id: string, updates: Partial<BlockStrategy>) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/strategies/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'strategies', id), updates);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        blockStrategies: prev.blockStrategies.map(s => s.id === id ? { ...s, ...updates } : s)
+      }));
+    }
   };
 
-  const removeBlockStrategy = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      blockStrategies: prev.blockStrategies.filter(s => s.id !== id)
-    }));
+  const removeBlockStrategy = async (id: string) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/strategies/${id}`;
+      try {
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'strategies', id));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        blockStrategies: prev.blockStrategies.filter(s => s.id !== id)
+      }));
+    }
   };
 
-  const addProject = (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string) => {
+  const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string) => {
     const newProject: Project = {
       id: Math.random().toString(36).substr(2, 9),
       name, description, category, status,
@@ -145,117 +367,284 @@ export const useStore = () => {
         { id: Math.random().toString(36).substr(2, 9), title: 'Beginning', startDate: new Date().toISOString(), endDate: null, is_complete: false }
       ]
     };
-    setState(prev => ({ ...prev, projects: [newProject, ...prev.projects] }));
+
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${newProject.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'projects', newProject.id), newProject);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, projects: [newProject, ...prev.projects] }));
+    }
     return newProject;
   };
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    setState(prev => ({
-      ...prev,
-      projects: prev.projects.map(p => p.id === id ? { ...p, ...updates } : p)
-    }));
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), updates);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.map(p => p.id === id ? { ...p, ...updates } : p)
+      }));
+    }
   };
 
-  const updateProjectPhases = (id: string, phases: ProjectPhase[]) => {
-    setState(prev => ({
-      ...prev,
-      projects: prev.projects.map(p => p.id === id ? { ...p, phases } : p)
-    }));
+  const updateProjectPhases = async (id: string, phases: ProjectPhase[]) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { phases });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.map(p => p.id === id ? { ...p, phases } : p)
+      }));
+    }
   };
 
-  const addLog = (log: Omit<WorkshopLog, 'id'>) => {
+  const addLog = async (log: Omit<WorkshopLog, 'id'>) => {
     const finalLog: WorkshopLog = { ...log, id: Math.random().toString(36).substr(2, 9) };
     const duration = log.actual_duration_minutes || log.duration_minutes || 0;
     
-    setState(prev => ({ 
-      ...prev, 
-      logs: [finalLog, ...prev.logs],
-      projects: prev.projects.map(p => 
-        p.id === log.project_id 
-          ? { ...p, total_minutes: p.total_minutes + duration } 
-          : p
-      )
-    }));
-  };
-
-  const updateLog = (id: string, updates: Partial<WorkshopLog>) => {
-    setState(prev => {
-      const oldLog = prev.logs.find(l => l.id === id);
-      if (!oldLog) return prev;
-
-      const newLogs = prev.logs.map(l => l.id === id ? { ...l, ...updates } : l);
+    if (currentUser) {
+      const userId = currentUser.uid;
+      const logPath = `users/${userId}/logs/${finalLog.id}`;
+      const projectPath = `users/${userId}/projects/${log.project_id}`;
       
-      // If duration changed, update project total_minutes
-      let newProjects = prev.projects;
-      const oldDuration = oldLog.actual_duration_minutes || oldLog.duration_minutes || 0;
-      const newDuration = updates.actual_duration_minutes !== undefined ? updates.actual_duration_minutes : 
-                          (updates.duration_minutes !== undefined ? updates.duration_minutes : oldDuration);
-      
-      if (oldDuration !== newDuration) {
-        newProjects = prev.projects.map(p => 
-          p.id === oldLog.project_id 
-            ? { ...p, total_minutes: p.total_minutes - oldDuration + newDuration } 
-            : p
-        );
+      try {
+        // We should ideally use a transaction here, but for simplicity:
+        await setDoc(doc(db, 'users', userId, 'logs', finalLog.id), finalLog);
+        
+        const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', log.project_id));
+        if (projectDoc.exists()) {
+          const currentTotal = projectDoc.data().total_minutes || 0;
+          await updateDoc(doc(db, 'users', userId, 'projects', log.project_id), {
+            total_minutes: currentTotal + duration
+          });
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, logPath);
       }
-
-      return { ...prev, logs: newLogs, projects: newProjects };
-    });
+    } else {
+      setState(prev => ({ 
+        ...prev, 
+        logs: [finalLog, ...prev.logs],
+        projects: prev.projects.map(p => 
+          p.id === log.project_id 
+            ? { ...p, total_minutes: p.total_minutes + duration } 
+            : p
+        )
+      }));
+    }
   };
 
-  const archiveProject = (id: string) => {
-    setState(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, is_archived: true } : p) }));
+  const updateLog = async (id: string, updates: Partial<WorkshopLog>) => {
+    if (currentUser) {
+      const userId = currentUser.uid;
+      const path = `users/${userId}/logs/${id}`;
+      try {
+        const logDoc = await getDoc(doc(db, 'users', userId, 'logs', id));
+        if (!logDoc.exists()) return;
+        
+        const oldLog = logDoc.data() as WorkshopLog;
+        await updateDoc(doc(db, 'users', userId, 'logs', id), updates);
+        
+        const oldDuration = oldLog.actual_duration_minutes || oldLog.duration_minutes || 0;
+        const newDuration = updates.actual_duration_minutes !== undefined ? updates.actual_duration_minutes : 
+                            (updates.duration_minutes !== undefined ? updates.duration_minutes : oldDuration);
+        
+        if (oldDuration !== newDuration) {
+          const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', oldLog.project_id));
+          if (projectDoc.exists()) {
+            const currentTotal = projectDoc.data().total_minutes || 0;
+            await updateDoc(doc(db, 'users', userId, 'projects', oldLog.project_id), {
+              total_minutes: currentTotal - oldDuration + newDuration
+            });
+          }
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => {
+        const oldLog = prev.logs.find(l => l.id === id);
+        if (!oldLog) return prev;
+        const newLogs = prev.logs.map(l => l.id === id ? { ...l, ...updates } : l);
+        let newProjects = prev.projects;
+        const oldDuration = oldLog.actual_duration_minutes || oldLog.duration_minutes || 0;
+        const newDuration = updates.actual_duration_minutes !== undefined ? updates.actual_duration_minutes : 
+                            (updates.duration_minutes !== undefined ? updates.duration_minutes : oldDuration);
+        if (oldDuration !== newDuration) {
+          newProjects = prev.projects.map(p => 
+            p.id === oldLog.project_id 
+              ? { ...p, total_minutes: p.total_minutes - oldDuration + newDuration } 
+              : p
+          );
+        }
+        return { ...prev, logs: newLogs, projects: newProjects };
+      });
+    }
   };
 
-  const unarchiveProject = (id: string) => {
-    setState(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, is_archived: false } : p) }));
+  const archiveProject = async (id: string) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_archived: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, is_archived: true } : p) }));
+    }
   };
 
-  const deleteProject = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      projects: prev.projects.filter(p => p.id !== id),
-      logs: prev.logs.filter(l => l.project_id !== id)
-    }));
+  const unarchiveProject = async (id: string) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_archived: false });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, is_archived: false } : p) }));
+    }
   };
 
-  const updateProfile = (profile: Partial<ArtistProfile>) => {
-    setState(prev => ({ ...prev, artistProfile: { ...prev.artistProfile, ...profile } }));
+  const deleteProject = async (id: string) => {
+    if (currentUser) {
+      const userId = currentUser.uid;
+      const path = `users/${userId}/projects/${id}`;
+      try {
+        await deleteDoc(doc(db, 'users', userId, 'projects', id));
+        // Also cleanup logs?
+        const logsSnap = await getDocs(query(collection(db, 'users', userId, 'logs')));
+        logsSnap.forEach(async (logDoc) => {
+          if (logDoc.data().project_id === id) {
+            await deleteDoc(logDoc.ref);
+          }
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.filter(p => p.id !== id),
+        logs: prev.logs.filter(l => l.project_id !== id)
+      }));
+    }
   };
 
-  const addScheduleItem = (item: Omit<ScheduleItem, 'id'>) => {
-    setState(prev => ({ ...prev, schedule: [...prev.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }] }));
+  const updateProfile = async (profile: Partial<ArtistProfile>) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid), profile, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, artistProfile: { ...prev.artistProfile, ...profile } }));
+    }
   };
 
-  const updateScheduleItem = (id: string, updates: Partial<ScheduleItem>) => {
-    setState(prev => ({
-      ...prev,
-      schedule: prev.schedule.map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
+  const addScheduleItem = async (item: Omit<ScheduleItem, 'id'>) => {
+    const newItem = { ...item, id: Math.random().toString(36).substr(2, 9) };
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/schedule/${newItem.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'schedule', newItem.id), newItem);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, schedule: [...prev.schedule, newItem] }));
+    }
   };
 
-  const removeScheduleItem = (id: string) => {
-    setState(prev => ({ ...prev, schedule: prev.schedule.filter(s => s.id !== id) }));
+  const updateScheduleItem = async (id: string, updates: Partial<ScheduleItem>) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/schedule/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'schedule', id), updates);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        schedule: prev.schedule.map(s => s.id === id ? { ...s, ...updates } : s)
+      }));
+    }
   };
 
-  const toggleReminder = (id: string) => {
-    setState(prev => ({ ...prev, schedule: prev.schedule.map(s => s.id === id ? { ...s, reminder_set: !s.reminder_set } : s) }));
+  const removeScheduleItem = async (id: string) => {
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/schedule/${id}`;
+      try {
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'schedule', id));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, schedule: prev.schedule.filter(s => s.id !== id) }));
+    }
   };
 
-  const addProtocolLog = (log: Omit<ProtocolLog, 'id'>) => {
+  const toggleReminder = async (id: string) => {
+    const item = state.schedule.find(s => s.id === id);
+    if (!item) return;
+    
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/schedule/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'schedule', id), { reminder_set: !item.reminder_set });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ ...prev, schedule: prev.schedule.map(s => s.id === id ? { ...s, reminder_set: !s.reminder_set } : s) }));
+    }
+  };
+
+  const addProtocolLog = async (log: Omit<ProtocolLog, 'id'>) => {
     const finalLog: ProtocolLog = { ...log, id: Math.random().toString(36).substr(2, 9) };
-    setState(prev => ({ 
-      ...prev, 
-      protocolLogs: [finalLog, ...prev.protocolLogs]
-    }));
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/protocolLogs/${finalLog.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'protocolLogs', finalLog.id), finalLog);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ 
+        ...prev, 
+        protocolLogs: [finalLog, ...prev.protocolLogs]
+      }));
+    }
   };
 
   const reorderProjects = (newProjects: Project[]) => {
     setState(prev => {
-      // Keep archived projects at the end or wherever they were, but update the order of active ones
       const archived = prev.projects.filter(p => p.is_archived);
       return { ...prev, projects: [...newProjects, ...archived] };
     });
+    // Reordering on Firestore is tricky without individual weights. 
+    // We'll skip Firestore reordering for now or use a weights field if needed.
+    // But since the state is updated locally, and projects are lists, we'll keep it as is.
   };
 
   const consumeTickets = (amount: number = 1) => {
@@ -267,6 +656,13 @@ export const useStore = () => {
         totalUsed: prev.tickets.totalUsed + amount
       }
     }));
+    if (currentUser) {
+       const path = `users/${currentUser.uid}`;
+       updateDoc(doc(db, 'users', currentUser.uid), {
+         'tickets.remaining': Math.max(0, state.tickets.remaining - amount),
+         'tickets.totalUsed': state.tickets.totalUsed + amount
+       }).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
+    }
   };
 
   const addTickets = (amount: number = 1) => {
@@ -277,11 +673,18 @@ export const useStore = () => {
         remaining: prev.tickets.remaining + amount
       }
     }));
+    if (currentUser) {
+      const path = `users/${currentUser.uid}`;
+      updateDoc(doc(db, 'users', currentUser.uid), {
+        'tickets.remaining': state.tickets.remaining + amount
+      }).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
+    }
   };
 
   return { 
     state, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProject, updateProject, updateProjectPhases, addLog, updateLog, reorderProjects,
     archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, 
-    updateScheduleItem, removeScheduleItem, toggleReminder, addProtocolLog, consumeTickets, addTickets
+    updateScheduleItem, removeScheduleItem, toggleReminder, addProtocolLog, consumeTickets, addTickets,
+    currentUser, signIn, signOut
   };
 };

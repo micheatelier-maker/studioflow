@@ -1,0 +1,190 @@
+{
+  "entities": {
+    "ArtistProfile": {
+      "title": "Artist Profile",
+      "description": "User's artistic profile and identity",
+      "type": "object",
+      "properties": {
+        "stageName": { "type": "string" },
+        "realName": { "type": "string" },
+        "discipline": { "type": "string" },
+        "disciplineColor": { "type": "string" },
+        "style": { "type": "string" },
+        "styleColor": { "type": "string" },
+        "loves": { "type": "string" },
+        "inspirations": { "type": "string" },
+        "obsessions": { "type": "string" },
+        "profileImage": { "type": "string" },
+        "upcomingProjects": { "type": "array", "items": { "type": "string" } },
+        "deadlines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "date": { "type": "string" }
+            }
+          }
+        },
+        "isOnboarded": { "type": "boolean" }
+      }
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A creative project in the workshop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Exploring", "Stalled", "Paused", "Complete"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "is_archived": { "type": "boolean" },
+        "total_minutes": { "type": "number" },
+        "tools_and_materials": { "type": "array", "items": { "type": "string" } },
+        "technical_notes": { "type": "array", "items": { "type": "string" } },
+        "milestones": { "type": "array", "items": { "type": "string" } },
+        "accumulated_insights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "date": { "type": "string" },
+              "type": { "type": "string", "enum": ["technical", "conceptual", "aesthetic"] }
+            }
+          }
+        },
+        "unresolved_hurdles": { "type": "array", "items": { "type": "string" } },
+        "mood_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string" },
+              "level": { "type": "number" }
+            }
+          }
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "startDate": { "type": "string" },
+              "endDate": { "type": "string" },
+              "is_complete": { "type": "boolean" }
+            }
+          }
+        },
+        "color": { "type": "string" }
+      }
+    },
+    "WorkshopLog": {
+      "title": "Workshop Log",
+      "description": "Records of creative sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["session", "idea", "brainstorm", "problem", "post"] },
+        "project_id": { "type": "string" },
+        "project_name": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "duration_minutes": { "type": "number" },
+        "actual_duration_minutes": { "type": "number" },
+        "stage": { "type": "string" },
+        "summary": { "type": "string" },
+        "how_it_went": { "type": "string" },
+        "materials_used": { "type": "array", "items": { "type": "string" } },
+        "raw_transcript": { "type": "string" }
+      }
+    },
+    "ScheduleItem": {
+      "title": "Schedule Item",
+      "description": "Commitments and events",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string", "enum": ["deadline", "session", "event", "milestone"] },
+        "project_id": { "type": "string" },
+        "reminder_set": { "type": "boolean" }
+      }
+    },
+    "EnergyCheckIn": {
+      "title": "Energy Check-In",
+      "description": "Tracking user's energy levels",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "level": { "type": "number" },
+        "note": { "type": "string" },
+        "date": { "type": "string" }
+      }
+    },
+    "BlockStrategy": {
+      "title": "Block Strategy",
+      "description": "Protocols for overcoming creative blocks",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "duration": { "type": "number" },
+        "is_custom": { "type": "boolean" },
+        "is_favorite": { "type": "boolean" },
+        "energy_required": { "type": "number" },
+        "simplicity": { "type": "number" }
+      }
+    },
+    "ProtocolLog": {
+      "title": "Protocol Log",
+      "description": "Usage history of block strategies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "strategyId": { "type": "string" },
+        "strategyName": { "type": "string" },
+        "date": { "type": "string" },
+        "duration": { "type": "number" },
+        "reflection": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "ArtistProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "Project",
+      "description": "User projects"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "WorkshopLog",
+      "description": "User session logs"
+    },
+    "/users/{userId}/schedule/{scheduleId}": {
+      "schema": "ScheduleItem",
+      "description": "User commitments"
+    },
+    "/users/{userId}/energy/{energyId}": {
+      "schema": "EnergyCheckIn",
+      "description": "User energy history"
+    },
+    "/users/{userId}/strategies/{strategyId}": {
+      "schema": "BlockStrategy",
+      "description": "Custom block strategies"
+    },
+    "/users/{userId}/protocolLogs/{protocolLogId}": {
+      "schema": "ProtocolLog",
+      "description": "Protocol usage history"
+    }
+  }
+}
