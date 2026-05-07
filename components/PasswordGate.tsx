@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -32,13 +31,11 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
     }
   };
 
-
   if (isAuthenticated === null) return null;
 
   if (isAuthenticated) {
-    return children;
+    return <>{children}</>;
   }
-  
 
   return (
     <div className="fixed inset-0 bg-[#0f0d0c] z-[1000] flex items-center justify-center p-6 font-sans overflow-hidden">
