@@ -204,7 +204,7 @@ const FlowSession: React.FC<FlowSessionProps> = ({
         }
       };
 
-      mediaRecorder.start(10000); 
+      mediaRecorder.start(6000); 
     } catch (err) {
       console.error("Audio capture failed", err);
       setIsMicEnabled(false);
@@ -492,21 +492,23 @@ const FlowSession: React.FC<FlowSessionProps> = ({
         </div>
 
         {/* Live Thought Seeds Section - Speech Bubbles */}
-        <div className={`w-full max-h-[30vh] overflow-hidden px-6 space-y-3 transition-opacity duration-1000 ${isTimerRevealed ? 'opacity-100' : 'opacity-40'}`}>
+        <div className={`w-full max-h-[40vh] overflow-hidden px-10 space-y-4 transition-opacity duration-1000 ${isTimerRevealed ? 'opacity-100' : 'opacity-40'}`}>
           {isMicEnabled && seeds.length === 0 && (
             <div className="text-center py-4">
               <p className="text-stone-500 text-[10px] font-black uppercase tracking-widest animate-pulse italic">
-                Listening for insights...
+                Scanning for themes...
               </p>
             </div>
           )}
           {displaySeeds.map((seed, idx) => (
             <div 
               key={seed.id} 
-              className={`flex items-start space-x-3 bg-stone-900/80 backdrop-blur-2xl px-4 py-3 rounded-2xl border border-stone-800/40 animate-in slide-in-from-bottom-2 fade-in duration-500 shadow-2xl max-w-[85%] ${idx % 2 === 0 ? 'mr-auto rounded-bl-none' : 'ml-auto rounded-br-none'}`}
+              className={`flex items-start space-x-3 bg-stone-900/40 backdrop-blur-3xl px-5 py-3.5 rounded-[2rem] border border-white/5 animate-in zoom-in-90 slide-in-from-bottom-4 fade-in duration-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] max-w-fit ${idx % 2 === 0 ? 'mr-auto' : 'ml-auto'}`}
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(147,51,234,1)]"></div>
-              <p className="text-stone-100 text-xs font-bold tracking-tight leading-snug">{seed.text}</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
+              <p className="text-stone-200 text-[11px] font-black uppercase tracking-[0.1em] italic leading-tight">
+                {seed.text}
+              </p>
             </div>
           ))}
         </div>

@@ -152,13 +152,15 @@ export const refineNarrativeFromAudio = async (
 export const summarizeSeed = async (base64Audio: string, mimeType: string): Promise<string | null> => {
   const model = "gemini-3-flash-preview";
   const systemInstruction = `
-    You are a flow-state companion.
-    Listen to this 10-second snippet of an artist working. 
-    If there is speech, extract the most potent 2-4 words directly from the user's speech.
-    Prioritize using the user's actual vocabulary and phrasing over your own interpretation.
-    The goal is to mirror their exact "thought seed" as they spoke it.
-    If there is only background noise or silence, return 'SILENCE'.
-    Return ONLY the summary text or 'SILENCE'.
+    You are a flow-state companion, listening to an artist's stream of consciousness processing.
+    Your goal is to "pluck out" a single, potent key theme or creative fragment from this 10-second snippet.
+    
+    CRITICAL RULES:
+    1. Extract ONLY 1-3 words that represent a major "theme" or "thought seed" mentioned.
+    2. Use the user's actual phrasing/vocabulary if possible.
+    3. Make it feel like a piece of data being extracted from a deep flow.
+    4. If there is no clear speech or insight, return 'SILENCE'.
+    5. Return ONLY the extracted fragment or 'SILENCE'.
   `;
 
   const response = await ai.models.generateContent({
