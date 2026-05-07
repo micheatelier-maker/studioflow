@@ -1,3 +1,8 @@
 export default function App() {
-  return <div style={{ color: 'white' }}>APP WORKS</div>;
+  return  
+    <PasswordGate> 
+      <div style={{ color: 'white' }}>APP WORKS
+      </div>  
+    
+    </PasswordGate>;
 }
