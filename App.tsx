@@ -310,9 +310,6 @@ const App: React.FC = () => {
         )}
       </div>
     </PasswordGate>
-
-
-    return <div style={{ color: "white" }}>WORKING</div>;
   );
 };
 
