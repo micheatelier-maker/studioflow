@@ -139,11 +139,12 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
     if (timerRef.current) clearInterval(timerRef.current);
     
     const finalSeconds = recordingTime;
+    const ticketsToConsume = Math.ceil((recordingTime + 1) / (5 * 60));
     const finalMinutes = Math.max(1, Math.ceil(finalSeconds / 60));
 
     if (isMicEnabled && mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       setIsProcessing(true);
-      onConsumeTickets(finalMinutes);
+      onConsumeTickets(ticketsToConsume);
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         try {

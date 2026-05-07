@@ -1118,11 +1118,11 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600/5 blur-[40px] rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
             <div className="space-y-1 relative z-10">
               <h4 className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">AI Capacity</h4>
-              <p className="text-stone-100 text-sm font-black tracking-tight">Weekly AI Tokens Used</p>
+              <p className="text-stone-100 text-sm font-black tracking-tight">Studio Ear Tokens Left</p>
             </div>
             <div className="text-right relative z-10">
-              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.totalUsed}</span>
-              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">In Flow</span>
+              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.remaining}</span>
+              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">Available</span>
             </div>
           </div>
         </div>

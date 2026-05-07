@@ -257,9 +257,10 @@ const FlowSession: React.FC<FlowSessionProps> = ({
     
     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     const finalMinutes = Math.ceil(seconds / 60);
+    const ticketsToConsume = Math.ceil((seconds + 1) / (5 * 60));
 
     if (isMicEnabled) {
-      onConsumeTickets(finalMinutes);
+      onConsumeTickets(ticketsToConsume);
     }
 
     try {
