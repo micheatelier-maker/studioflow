@@ -31,11 +31,17 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ children }) => {
     }
   };
 
-  if (isAuthenticated === null) return null;
 
-  if (isAuthenticated) {
-    return <>{children}</>;
-  }
+
+if (isAuthenticated === null) {
+  return (
+    <div className="fixed inset-0 bg-[#0f0d0c] z-[1000] flex items-center justify-center text-stone-500 text-sm">
+      Loading...
+    </div>
+  );
+}
+
+  
 
   return (
     <div className="fixed inset-0 bg-[#0f0d0c] z-[1000] flex items-center justify-center p-6 font-sans overflow-hidden">
