@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AppState, Project, WorkshopLog, ScheduleItem, BlockStrategy } from '../types';
 import BlockRemoverSession from './BlockRemoverSession';
-import TicketDisplay from './TicketDisplay';
 import { DEEP_DIVE_QUESTIONS } from './LogForm';
 
 interface DashboardProps {
@@ -70,20 +69,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [previousLevel, setPreviousLevel] = useState(selectedLevel);
   const [energyNote, setEnergyNote] = useState('');
   const [showCommitmentInfo, setShowCommitmentInfo] = useState(false);
+  const [showEmergencyInfo, setShowEmergencyInfo] = useState(false);
   
   // Strategy Form State
-  const [isAddingStrategy, setIsAddingStrategy] = useState(false);
   const [editingStrategyId, setEditingStrategyId] = useState<string | null>(null);
   const [strategyInput, setStrategyInput] = useState({ name: '', description: '', duration: 5 });
   
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   const [expandedRippleId, setExpandedRippleId] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<{ name: string; duration: number } | null>(null);
-  const [showLabInfo, setShowLabInfo] = useState(false);
+  const [labTab, setLabTab] = useState<'library' | 'history' | 'create'>('library');
+  const [deployConfirmation, setDeployConfirmation] = useState<BlockStrategy | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [isWarmGlow, setIsWarmGlow] = useState(false);
-  const [deployConfirmation, setDeployConfirmation] = useState<BlockStrategy | null>(null);
-  const [showProtocolHistory, setShowProtocolHistory] = useState(false);
 
   const labRef = useRef<HTMLElement>(null);
 
@@ -209,13 +207,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const resetStrategyForm = () => {
     setStrategyInput({ name: '', description: '', duration: 5 });
     setEditingStrategyId(null);
-    setIsAddingStrategy(false);
+    setLabTab('library');
   };
 
   const handleEditStrategy = (s: BlockStrategy) => {
     setStrategyInput({ name: s.name, description: s.description, duration: s.duration });
     setEditingStrategyId(s.id);
-    setIsAddingStrategy(true);
+    setLabTab('create');
   };
 
   const getScheduleTypeIcon = (type: string) => {
@@ -253,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const labelClasses = "block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] mb-2 ml-1";
 
   return (
-    <div className="space-y-6 pt-0 pb-32 animate-in fade-in slide-in-from-bottom-6 duration-1000 no-scrollbar overflow-x-hidden relative">
+    <div className="flex flex-col gap-6 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-8 pt-8 pb-32 animate-in fade-in slide-in-from-bottom-6 duration-1000 no-scrollbar overflow-x-hidden relative items-start">
       {/* Global Warm Glow Background Overlay */}
       <div className={`fixed inset-0 bg-rose-950/20 transition-opacity duration-1000 pointer-events-none z-0 ${isWarmGlow ? 'opacity-100' : 'opacity-0'}`}></div>
 
@@ -350,7 +348,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <svg className={`w-3 h-3 text-stone-600 transition-transform duration-500 ${isEnergyExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
                </button>
-               <TicketDisplay remaining={state.tickets.remaining} />
             </div>
           </div>
           <button 
@@ -426,24 +423,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                     })}
                 </div>
               </div>
-
-              <TicketDisplay remaining={state.tickets.remaining} variant="full" />
-              
-              {state.tickets.remaining === 0 && (
-                <div className="bg-orange-950/20 border border-orange-900/30 p-6 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                  <div className="flex items-center space-x-3">
-                    <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <h4 className="text-orange-500 text-[10px] font-black uppercase tracking-widest">Out of Tickets</h4>
-                  </div>
-                  <p className="text-stone-400 text-xs font-medium italic">Upgrade to Pro to unlock unlimited studio ear time, or top up your tickets below.</p>
-                  <button 
-                    onClick={() => onAddTickets?.(5)}
-                    className="w-full py-3 bg-orange-900/40 border border-orange-800/40 rounded-2xl text-orange-100 font-black uppercase text-[10px] tracking-widest hover:bg-orange-800 transition-all active:scale-95"
-                  >
-                    Buy 5 Tickets ($2.99)
-                  </button>
-                </div>
-              )}
 
               <div className="space-y-4">
                 <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.2em] ml-1">Current Vibe</label>
@@ -706,7 +685,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Thick Separator */}
-      <div className="py-12 flex items-center justify-center">
+      <div className="py-12 flex items-center justify-center md:hidden">
         <div className="w-12 h-px bg-stone-800/40"></div>
         <div className="w-2 h-2 rounded-full bg-stone-800/20 mx-4"></div>
         <div className="w-12 h-px bg-stone-800/40"></div>
@@ -724,119 +703,83 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="absolute inset-0 bg-orange-600/5 blur-[100px] rounded-[3rem] animate-pulse pointer-events-none"></div>
         )}
         <div className="flex justify-between items-end px-1 relative z-10">
-          <div className="space-y-1">
-            <h2 className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-700 ${isWarmGlow ? 'text-orange-500' : 'text-rose-600'}`}>Block Recovery Lab</h2>
-            <div className="flex items-center space-x-3">
+          <div className="space-y-3 w-full">
+            <div className="flex items-center justify-between">
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-700 ${isWarmGlow ? 'text-orange-500' : 'text-rose-600'}`}>Block Recovery Lab</h2>
               <button 
-                onClick={() => setShowLabInfo(true)}
-                className={`text-[8px] font-black uppercase tracking-widest animate-pulse transition-colors duration-700 ${isWarmGlow ? 'text-orange-400' : 'text-rose-500'}`}
+                onClick={() => setShowEmergencyInfo(true)}
+                className="p-2 text-stone-600 hover:text-stone-400 transition-colors"
+                aria-label="Recovery Lab Emergency Info"
               >
-                Emergency Resets
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </button>
-              <button 
-                onClick={() => setShowProtocolHistory(true)}
-                className="text-stone-600 text-[8px] font-black uppercase tracking-widest hover:text-stone-400 transition-colors"
-              >
-                History
-              </button>
-              <button 
-                onClick={() => setIsAddingStrategy(true)}
-                className="text-emerald-600 text-[8px] font-black uppercase tracking-widest hover:text-emerald-400 transition-colors"
-              >
-                + New Protocol
-              </button>
+            </div>
+            
+            <div className="flex items-center space-x-1 p-1 bg-stone-950/40 rounded-2xl border border-stone-800/20 backdrop-blur-md overflow-x-auto no-scrollbar">
+              {[
+                { id: 'library', label: 'Catalog', color: 'text-stone-400' },
+                { id: 'history', label: 'History', color: 'text-stone-500' },
+                { id: 'create', label: 'New Protocol', color: 'text-emerald-600' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setLabTab(tab.id as any)}
+                  className={`flex-1 min-w-[80px] py-2 px-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all duration-300 ${labTab === tab.id ? 'bg-stone-900 border border-stone-800/60 shadow-lg ' + tab.color : 'text-stone-700 hover:text-stone-500'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {showProtocolHistory && (
-          <div className="fixed inset-0 bg-stone-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-[#1a1715] border border-stone-800/30 rounded-[3rem] p-8 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-500 max-h-[80vh] flex flex-col">
-              <div className="space-y-1">
-                <h3 className="text-stone-100 text-xl font-black uppercase tracking-tighter">Protocol History</h3>
-                <p className="text-stone-600 text-[10px] font-black uppercase tracking-widest">Your recovery journey</p>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-2">
-                {state.protocolLogs.length === 0 ? (
-                  <div className="py-12 text-center space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-stone-900 border border-stone-800 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-6 h-6 text-stone-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <p className="text-stone-500 text-xs font-medium italic">No protocols deployed yet.</p>
+        {labTab === 'history' && (
+          <div className="space-y-6 animate-in fade-in duration-500 py-4 max-h-[60vh] overflow-y-auto no-scrollbar relative z-10">
+            <div className="space-y-1">
+              <p className="text-stone-600 text-[9px] font-black uppercase tracking-widest">Your recovery journey</p>
+            </div>
+            
+            <div className="space-y-4">
+              {state.protocolLogs.length === 0 ? (
+                <div className="py-12 text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-stone-900 border border-stone-800 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-stone-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>
-                ) : (
-                  state.protocolLogs.map(log => (
-                    <div key={log.id} className="bg-stone-900/40 border border-stone-800/40 p-5 rounded-3xl space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <span className="text-stone-600 text-[8px] font-black uppercase tracking-widest">{new Date(log.date).toLocaleDateString()}</span>
-                          <h4 className="text-stone-100 font-bold text-sm">{log.strategyName}</h4>
-                        </div>
-                        <span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{log.duration}m</span>
+                  <p className="text-stone-500 text-xs font-medium italic">No protocols deployed yet.</p>
+                </div>
+              ) : (
+                state.protocolLogs.map(log => (
+                  <div key={log.id} className="bg-stone-900/40 border border-stone-800/40 p-5 rounded-3xl space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <span className="text-stone-600 text-[8px] font-black uppercase tracking-widest">{new Date(log.date).toLocaleDateString()}</span>
+                        <h4 className="text-stone-100 font-bold text-sm">{log.strategyName}</h4>
                       </div>
-                      {log.reflection && (
-                        <div className="bg-stone-950/40 p-3 rounded-2xl border border-stone-800/20">
-                          <div className="flex items-center space-x-2 mb-1">
-                            {log.reflectionType === 'voice' ? (
-                              <svg className="w-2.5 h-2.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z" /></svg>
-                            ) : (
-                              <svg className="w-2.5 h-2.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            )}
-                            <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest">Reflection</span>
-                          </div>
-                          <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.reflection}</p>
-                        </div>
-                      )}
+                      <span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{log.duration}m</span>
                     </div>
-                  ))
-                )}
-              </div>
-
-              <button 
-                onClick={() => setShowProtocolHistory(false)}
-                className="w-full py-4 bg-stone-900 text-stone-100 font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl border border-stone-800 active:scale-95 transition-all"
-              >
-                Close
-              </button>
+                    {log.reflection && (
+                      <div className="bg-stone-950/40 p-3 rounded-2xl border border-stone-800/20">
+                        <div className="flex items-center space-x-2 mb-1">
+                          {log.reflectionType === 'voice' ? (
+                            <svg className="w-2.5 h-2.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z" /></svg>
+                          ) : (
+                            <svg className="w-2.5 h-2.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          )}
+                          <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest">Reflection</span>
+                        </div>
+                        <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.reflection}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
-        {showLabInfo && (
-          <div className="fixed inset-0 bg-stone-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-[#1a1715] border border-rose-900/30 rounded-[3rem] p-8 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-500">
-              <div className="space-y-2">
-                <h3 className="text-rose-500 text-xl font-black uppercase tracking-tighter">The Recovery Lab</h3>
-                <p className="text-stone-400 text-sm leading-relaxed font-medium">
-                  Creative blocks are often physiological. The Recovery Lab provides evidence-based protocols to reset your nervous system, break demand avoidance, and trigger diffuse-mode thinking.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 text-stone-500">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-600"></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Bilateral Stimulation</span>
-                </div>
-                <div className="flex items-center space-x-3 text-stone-500">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Cognitive Offloading</span>
-                </div>
-                <div className="flex items-center space-x-3 text-stone-500">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Sensory Grounding</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowLabInfo(false)}
-                className="w-full py-4 bg-stone-900 text-stone-100 font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl border border-stone-800 active:scale-95 transition-all"
-              >
-                Return to Lab
-              </button>
-            </div>
-          </div>
-        )}
-
-        {primeRecommendation && (
+        {labTab === 'library' && primeRecommendation && (
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center px-1">
                <div className="flex items-center space-x-2">
@@ -902,134 +845,138 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
         
-        <div className="flex justify-between items-end px-1 mt-8">
-          <div className="space-y-1">
-            <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Protocol Library</h2>
-            <p className="text-stone-800 text-[8px] font-black uppercase tracking-widest">Full Catalog</p>
-          </div>
-          <button 
-            onClick={() => setFavoritesOnly(!favoritesOnly)}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-all active:scale-95 ${favoritesOnly ? 'bg-orange-950/40 border-orange-700/40 text-orange-500' : 'bg-stone-900/40 border-stone-800/40 text-stone-600'}`}
-          >
-            <svg className={`w-3 h-3 ${favoritesOnly ? 'fill-orange-500' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-            </svg>
-            <span className="text-[9px] font-black uppercase tracking-widest">{favoritesOnly ? 'Favorites' : 'All'}</span>
-          </button>
-        </div>
-        <div className="flex overflow-x-auto no-scrollbar space-x-4 pb-2 px-1">
-          {state.blockStrategies
-            .filter(s => !favoritesOnly || s.is_favorite)
-            .map((s, i) => {
-            const isExpanded = expandedBlockId === s.id;
-
-            return (
-              <div 
-                key={s.id} 
-                onClick={() => setExpandedBlockId(isExpanded ? null : s.id)}
-                className={`flex-shrink-0 bg-[#1a1715] border border-stone-800/60 rounded-[2rem] p-6 flex flex-col justify-between space-y-6 shadow-xl relative overflow-hidden transition-all duration-300 text-left cursor-pointer active:scale-[0.98] ${isExpanded ? 'w-80 border-orange-900/40 ring-1 ring-orange-900/20' : 'w-64'} ${isWarmGlow ? 'hover:-translate-y-1' : ''}`}
-              >
-                <div className="absolute top-0 right-0 w-16 h-16 bg-orange-900/5 blur-2xl rounded-full"></div>
-                <div className="space-y-3 relative z-10">
-                   <div className="flex justify-between items-center">
-                      <span className="text-[8px] font-black text-stone-700 uppercase tracking-widest">{s.is_custom ? 'Custom Protocol' : `Protocol ${i + 1}`}</span>
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            onUpdateBlockStrategy?.(s.id, { is_favorite: !s.is_favorite }); 
-                          }}
-                          className={`p-1.5 rounded-lg border transition-all ${s.is_favorite ? 'bg-orange-950/40 border-orange-700/40 text-orange-500' : 'bg-stone-900/40 border-stone-800/40 text-stone-700 hover:text-stone-400'}`}
-                        >
-                          <svg className={`w-3 h-3 ${s.is_favorite ? 'fill-orange-500' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                          </svg>
-                        </button>
-                        {s.is_custom && !isExpanded && (
-                          <div onClick={(e) => { e.stopPropagation(); handleEditStrategy(s); }} className="text-stone-700 hover:text-stone-300 transition-colors">
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          </div>
-                        )}
-                        {s.is_custom && !isExpanded && onRemoveBlockStrategy && (
-                          <div onClick={(e) => { e.stopPropagation(); onRemoveBlockStrategy(s.id); }} className="text-stone-800 hover:text-rose-900 transition-colors">
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </div>
-                        )}
-                      </div>
-                   </div>
-                   <p className="text-stone-100 font-bold text-sm leading-snug">{s.name}</p>
-                   
-                   {isExpanded && (
-                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-500">
-                        <p className="text-stone-400 text-[11px] leading-relaxed italic font-medium">
-                          {s.description}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                           <div className="flex items-center space-x-2 bg-stone-900/40 w-fit px-3 py-1 rounded-full border border-stone-800/50">
-                              <svg className="w-3 h-3 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                              <span className="text-stone-300 text-[9px] font-black tracking-widest">{s.duration}m Duration</span>
-                           </div>
-                           {s.energy_required && (
-                             <div className="flex items-center space-x-2 bg-stone-900/40 w-fit px-3 py-1 rounded-full border border-stone-800/50">
-                                <span className="text-stone-500 text-[8px] font-black uppercase tracking-widest">Energy</span>
-                                <div className="flex space-x-0.5">
-                                  {[1, 2, 3, 4, 5].map(lvl => (
-                                    <div key={lvl} className={`w-1 h-2 rounded-full ${lvl <= (s.energy_required || 0) ? 'bg-orange-600' : 'bg-stone-800'}`}></div>
-                                  ))}
-                                </div>
-                             </div>
-                           )}
-                        </div>
-                        <div className="flex space-x-2">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeploy(s); }}
-                            className="flex-1 py-4 bg-orange-800 text-stone-100 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-lg shadow-orange-950/40 border border-orange-700 active:scale-95 transition-all"
-                          >
-                            Deploy
-                          </button>
-                          {s.is_custom && (
-                             <button 
-                              onClick={(e) => { e.stopPropagation(); handleEditStrategy(s); }}
-                              className="bg-stone-900 border border-stone-800 px-4 rounded-2xl text-stone-500 active:scale-95 transition-all"
-                             >
-                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                             </button>
-                          )}
-                        </div>
-                     </div>
-                   )}
-                </div>
-                
-                {!isExpanded && (
-                  <div className="flex items-center justify-between relative z-10 w-full">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.4)]"></div>
-                      <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Expand</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      {s.simplicity && (
-                        <div className="flex items-center space-x-1">
-                          <span className="text-[7px] font-black text-stone-700 uppercase tracking-widest">Simple</span>
-                          <div className="flex space-x-0.5">
-                            {[1, 2, 3].map(lvl => (
-                              <div key={lvl} className={`w-0.5 h-1.5 rounded-full ${lvl <= (s.simplicity || 0) / 1.7 ? 'bg-emerald-600' : 'bg-stone-800'}`}></div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-1.5 bg-stone-900/60 px-2 py-0.5 rounded-lg border border-stone-800/40">
-                        <svg className="w-2.5 h-2.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span className="text-stone-400 text-[8px] font-black tabular-nums">{s.duration}m</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {labTab === 'library' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-end px-1 mt-8">
+              <div className="space-y-1">
+                <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Protocol Library</h2>
+                <p className="text-stone-800 text-[8px] font-black uppercase tracking-widest">Full Catalog</p>
               </div>
-            );
-          })}
-        </div>
+              <button 
+                onClick={() => setFavoritesOnly(!favoritesOnly)}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-all active:scale-95 ${favoritesOnly ? 'bg-orange-950/40 border-orange-700/40 text-orange-500' : 'bg-stone-900/40 border-stone-800/40 text-stone-600'}`}
+              >
+                <svg className={`w-3 h-3 ${favoritesOnly ? 'fill-orange-500' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+                <span className="text-[9px] font-black uppercase tracking-widest">{favoritesOnly ? 'Favorites' : 'All'}</span>
+              </button>
+            </div>
+            <div className="flex overflow-x-auto no-scrollbar space-x-4 pb-2 px-1">
+              {state.blockStrategies
+                .filter(s => !favoritesOnly || s.is_favorite)
+                .map((s, i) => {
+                const isExpanded = expandedBlockId === s.id;
 
-        {isAddingStrategy && (
+                return (
+                  <div 
+                    key={s.id} 
+                    onClick={() => setExpandedBlockId(isExpanded ? null : s.id)}
+                    className={`flex-shrink-0 bg-[#1a1715] border border-stone-800/60 rounded-[2rem] p-6 flex flex-col justify-between space-y-6 shadow-xl relative overflow-hidden transition-all duration-300 text-left cursor-pointer active:scale-[0.98] ${isExpanded ? 'w-80 border-orange-900/40 ring-1 ring-orange-900/20' : 'w-64'} ${isWarmGlow ? 'hover:-translate-y-1' : ''}`}
+                  >
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-orange-900/5 blur-2xl rounded-full"></div>
+                    <div className="space-y-3 relative z-10">
+                       <div className="flex justify-between items-center">
+                          <span className="text-[8px] font-black text-stone-700 uppercase tracking-widest">{s.is_custom ? 'Custom Protocol' : `Protocol ${i + 1}`}</span>
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                onUpdateBlockStrategy?.(s.id, { is_favorite: !s.is_favorite }); 
+                              }}
+                              className={`p-1.5 rounded-lg border transition-all ${s.is_favorite ? 'bg-orange-950/40 border-orange-700/40 text-orange-500' : 'bg-stone-900/40 border-stone-800/40 text-stone-700 hover:text-stone-400'}`}
+                            >
+                              <svg className={`w-3 h-3 ${s.is_favorite ? 'fill-orange-500' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                              </svg>
+                            </button>
+                            {s.is_custom && !isExpanded && (
+                              <div onClick={(e) => { e.stopPropagation(); handleEditStrategy(s); }} className="text-stone-700 hover:text-stone-300 transition-colors">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                              </div>
+                            )}
+                            {s.is_custom && !isExpanded && onRemoveBlockStrategy && (
+                              <div onClick={(e) => { e.stopPropagation(); onRemoveBlockStrategy(s.id); }} className="text-stone-800 hover:text-rose-900 transition-colors">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </div>
+                            )}
+                          </div>
+                       </div>
+                       <p className="text-stone-100 font-bold text-sm leading-snug">{s.name}</p>
+                       
+                       {isExpanded && (
+                         <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <p className="text-stone-400 text-[11px] leading-relaxed italic font-medium">
+                              {s.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                               <div className="flex items-center space-x-2 bg-stone-900/40 w-fit px-3 py-1 rounded-full border border-stone-800/50">
+                                  <svg className="w-3 h-3 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  <span className="text-stone-300 text-[9px] font-black tracking-widest">{s.duration}m Duration</span>
+                               </div>
+                               {s.energy_required && (
+                                 <div className="flex items-center space-x-2 bg-stone-900/40 w-fit px-3 py-1 rounded-full border border-stone-800/50">
+                                    <span className="text-stone-500 text-[8px] font-black uppercase tracking-widest">Energy</span>
+                                    <div className="flex space-x-0.5">
+                                      {[1, 2, 3, 4, 5].map(lvl => (
+                                        <div key={lvl} className={`w-1 h-2 rounded-full ${lvl <= (s.energy_required || 0) ? 'bg-orange-600' : 'bg-stone-800'}`}></div>
+                                      ))}
+                                    </div>
+                                 </div>
+                               )}
+                            </div>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeploy(s); }}
+                                className="flex-1 py-4 bg-orange-800 text-stone-100 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-lg shadow-orange-950/40 border border-orange-700 active:scale-95 transition-all"
+                              >
+                                Deploy
+                              </button>
+                              {s.is_custom && (
+                                 <button 
+                                  onClick={(e) => { e.stopPropagation(); handleEditStrategy(s); }}
+                                  className="bg-stone-900 border border-stone-800 px-4 rounded-2xl text-stone-500 active:scale-95 transition-all"
+                                 >
+                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                 </button>
+                              )}
+                            </div>
+                         </div>
+                       )}
+                    </div>
+                    
+                    {!isExpanded && (
+                      <div className="flex items-center justify-between relative z-10 w-full">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.4)]"></div>
+                          <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Expand</span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {s.simplicity && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-[7px] font-black text-stone-700 uppercase tracking-widest">Simple</span>
+                              <div className="flex space-x-0.5">
+                                {[1, 2, 3].map(lvl => (
+                                  <div key={lvl} className={`w-0.5 h-1.5 rounded-full ${lvl <= (s.simplicity || 0) / 1.7 ? 'bg-emerald-600' : 'bg-stone-800'}`}></div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-1.5 bg-stone-900/60 px-2 py-0.5 rounded-lg border border-stone-800/40">
+                            <svg className="w-2.5 h-2.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-stone-400 text-[8px] font-black tabular-nums">{s.duration}m</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {labTab === 'create' && (
           <div className="bg-[#1a1715] border border-orange-900/40 rounded-[2.5rem] p-8 space-y-6 animate-in slide-in-from-top-4 duration-500 mx-1 shadow-2xl relative z-50">
              <div className="space-y-1">
                <h4 className="text-stone-100 text-xs font-black uppercase tracking-widest">{editingStrategyId ? 'Edit Protocol' : 'Define New Protocol'}</h4>
@@ -1090,6 +1037,58 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
 
+      {showEmergencyInfo && (
+        <div className="fixed inset-0 bg-stone-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#1a1715] border border-rose-900/30 rounded-[3rem] p-8 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="space-y-2">
+              <h3 className="text-rose-500 text-xl font-black uppercase tracking-tighter">Emergency Resets</h3>
+              <p className="text-stone-400 text-sm leading-relaxed font-medium">
+                Creative blocks are physiological. Reset your nervous system, break demand avoidance, and trigger diffuse-mode thinking.
+              </p>
+            </div>
+            <div className="space-y-3 bg-stone-900/30 p-6 rounded-3xl border border-stone-800/40">
+              <div className="flex items-center space-x-3 text-stone-400">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-600"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Bilateral Stimulation</span>
+              </div>
+              <div className="flex items-center space-x-3 text-stone-400">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Cognitive Offloading</span>
+              </div>
+              <div className="flex items-center space-x-3 text-stone-400">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Sensory Grounding</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowEmergencyInfo(false)}
+              className="w-full py-4 bg-stone-900 text-stone-100 font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl border border-stone-800 active:scale-95 transition-all"
+            >
+              Return to Lab
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCommitmentInfo && (
+        <div className="fixed inset-0 bg-stone-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#1a1715] border border-stone-800/30 rounded-[3rem] p-8 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="space-y-2">
+              <h3 className="text-stone-100 text-xl font-black uppercase tracking-tighter">Commitments</h3>
+              <p className="text-stone-400 text-sm leading-relaxed font-medium capitalize italic">
+                Scheduled goals and deadlines for the current cycle.
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowCommitmentInfo(false)}
+              className="w-full py-4 bg-stone-900 text-stone-100 font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl border border-stone-800 active:scale-95 transition-all"
+            >
+              Return
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Weekly Views Section - MOVED TO BOTTOM */}
       <section className="space-y-2 pt-4">
         <div className="grid grid-cols-3 gap-2">
@@ -1111,6 +1110,21 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-stone-200 text-lg font-black tabular-nums">{upcomingCount}</span>
               <span className="text-stone-600 text-[7px] font-black uppercase tracking-widest text-center leading-tight">Commitments</span>
           </button>
+        </div>
+
+        {/* AI Token Usage Box */}
+        <div className="mt-8 px-1">
+          <div className="bg-[#1a1715] border border-orange-900/20 rounded-[2rem] p-6 flex items-center justify-between shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600/5 blur-[40px] rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
+            <div className="space-y-1 relative z-10">
+              <h4 className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">AI Capacity</h4>
+              <p className="text-stone-100 text-sm font-black tracking-tight">Weekly AI Tokens Used</p>
+            </div>
+            <div className="text-right relative z-10">
+              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.totalUsed}</span>
+              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">In Flow</span>
+            </div>
+          </div>
         </div>
       </section>
     </div>

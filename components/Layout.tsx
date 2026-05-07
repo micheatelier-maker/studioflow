@@ -11,17 +11,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogClick, hideNav = false }) => {
   return (
-    <div className="flex flex-col relative bg-[#0f0d0c]">
-      <main className={`flex-1 px-5 safe-area-top ${hideNav ? '' : 'pb-32'}`}>
-        {children}
-      </main>
-
-      {/* Bottom Nav Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 bg-[#14110f]/90 backdrop-blur-2xl border-t border-stone-800/50 safe-area-bottom z-50 transition-transform duration-700 ease-in-out ${hideNav ? 'translate-y-[150%]' : 'translate-y-0'}`}>
-        <div className="flex justify-around items-center h-20 relative px-2">
+    <div className="flex flex-col md:flex-row relative bg-[#0f0d0c] min-h-screen">
+      {/* Navigation Bar / Sidebar */}
+      <nav className={`fixed bottom-0 left-0 right-0 md:top-0 md:right-auto md:w-24 md:h-screen bg-[#14110f]/90 backdrop-blur-2xl border-t md:border-t-0 md:border-r border-stone-800/50 safe-area-bottom z-50 transition-transform duration-700 ease-in-out ${hideNav ? 'translate-y-[150%] md:translate-x-[-100%] md:translate-y-0' : 'translate-y-0 md:translate-x-0'}`}>
+        <div className="flex justify-around md:flex-col md:justify-center md:space-y-8 items-center h-20 md:h-full relative px-2">
           <button 
             onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] ${activeTab === 'home' ? 'text-orange-400' : 'text-stone-600'}`}
+            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] md:w-full ${activeTab === 'home' ? 'text-orange-400' : 'text-stone-600'}`}
           >
             <HomeIcon className="w-5 h-5" />
             <span className="text-[9px] mt-1.5 font-bold tracking-tight text-center">Studio</span>
@@ -29,13 +25,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
           
           <button 
             onClick={() => setActiveTab('projects')}
-            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] ${activeTab === 'projects' ? 'text-orange-400' : 'text-stone-600'}`}
+            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] md:w-full ${activeTab === 'projects' ? 'text-orange-400' : 'text-stone-600'}`}
           >
             <FolderIcon className="w-5 h-5" />
             <span className="text-[9px] mt-1.5 font-bold tracking-tight text-center">Projects</span>
           </button>
 
-          <div className="w-[18%] flex justify-center -mt-10">
+          <div className="w-[18%] md:w-full flex justify-center -mt-10 md:mt-0">
             <button 
               onClick={onLogClick}
               aria-label="Start Voice Log"
@@ -47,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
 
           <button 
             onClick={() => setActiveTab('commitments')}
-            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] ${activeTab === 'commitments' ? 'text-orange-400' : 'text-stone-600'}`}
+            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] md:w-full ${activeTab === 'commitments' ? 'text-orange-400' : 'text-stone-600'}`}
           >
             <CalendarIcon className="w-5 h-5" />
             <span className="text-[9px] mt-1.5 font-bold tracking-tight text-center leading-tight">Commitments</span>
@@ -55,13 +51,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
 
           <button 
             onClick={() => setActiveTab('flow')}
-            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] ${activeTab === 'flow' ? 'text-purple-500' : 'text-stone-600'}`}
+            className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] md:w-full ${activeTab === 'flow' ? 'text-purple-500' : 'text-stone-600'}`}
           >
             <BoltIcon className="w-5 h-5" />
             <span className="text-[9px] mt-1.5 font-bold tracking-tight text-center">Flow</span>
           </button>
         </div>
-      </div>
+      </nav>
+
+      <main className={`flex-1 px-5 safe-area-top overflow-x-hidden md:ml-24 ${hideNav ? '' : 'pb-32 md:pb-10'}`}>
+        {children}
+      </main>
     </div>
   );
 };
