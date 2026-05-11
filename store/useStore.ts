@@ -657,19 +657,27 @@ export const useStore = () => {
     }
   };
 
-  const toggleReminder = async (id: string) => {
+  const toggleReminder = async (id: string, config?: any) => {
     const item = state.schedule.find(s => s.id === id);
     if (!item) return;
+    
+    const newState = !item.reminder_set;
+    const updates: any = { reminder_set: newState };
+    if (newState && config) {
+      updates.reminder_config = config;
+    } else if (!newState) {
+      updates.reminder_config = null;
+    }
     
     if (currentUser) {
       const path = `users/${currentUser.uid}/schedule/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'schedule', id), { reminder_set: !item.reminder_set });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'schedule', id), updates);
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
     } else {
-      setState(prev => ({ ...prev, schedule: prev.schedule.map(s => s.id === id ? { ...s, reminder_set: !s.reminder_set } : s) }));
+      setState(prev => ({ ...prev, schedule: prev.schedule.map(s => s.id === id ? { ...s, ...updates } : s) }));
     }
   };
 

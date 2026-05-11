@@ -8,7 +8,7 @@ interface SchedulePageProps {
   onAddItem: (item: Omit<ScheduleItem, 'id'>) => void;
   onUpdateItem: (id: string, updates: Partial<ScheduleItem>) => void;
   onRemoveItem: (id: string) => void;
-  onToggleReminder: (id: string) => void;
+  onToggleReminder: (id: string, config?: any) => void;
   initialSelectedDate?: string | null;
   initialFocusedItemId?: string | null;
   autoOpenAddForm?: boolean;
@@ -18,6 +18,110 @@ interface SchedulePageProps {
 export interface SchedulePageRef {
   openAddForm: () => void;
 }
+
+const ReminderPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (config: any) => void;
+  initialDate?: string;
+}> = ({ isOpen, onClose, onSave, initialDate }) => {
+  const [type, setType] = useState<'advance' | 'specific'>('advance');
+  const [advanceValue, setAdvanceValue] = useState('10m');
+  const [specificDate, setSpecificDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
+  const [specificTime, setSpecificTime] = useState('09:00');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-stone-950/90 z-[400] flex items-center justify-center p-6 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-[#1a1715] border border-stone-800 shadow-2xl rounded-[2.5rem] w-full max-w-sm p-8 space-y-6">
+        <div className="text-center">
+          <h2 className="text-xl font-black text-stone-100 uppercase tracking-tight">Set Reminder</h2>
+          <p className="text-stone-600 text-[10px] font-black uppercase tracking-widest mt-1">Don't miss a beat</p>
+        </div>
+
+        <div className="flex bg-stone-900/50 p-1 rounded-2xl border border-stone-800">
+          <button 
+            type="button"
+            onClick={() => setType('advance')}
+            className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'advance' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-400'}`}
+          >
+            Advance
+          </button>
+          <button 
+            type="button"
+            onClick={() => setType('specific')}
+            className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'specific' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-400'}`}
+          >
+            Specific Time
+          </button>
+        </div>
+
+        {type === 'advance' ? (
+          <div className="space-y-4">
+            <label className="block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] ml-1">Time in Advance</label>
+            <select 
+              value={advanceValue} 
+              onChange={e => setAdvanceValue(e.target.value)}
+              className="w-full bg-stone-900 border border-stone-800 rounded-2xl px-5 py-4 text-stone-100 outline-none focus:border-orange-900 transition-all text-sm appearance-none"
+            >
+              <option value="10m">10 Minutes Before</option>
+              <option value="30m">30 Minutes Before</option>
+              <option value="1h">1 Hour Before</option>
+              <option value="2h">2 Hours Before</option>
+              <option value="1d">1 Day Before</option>
+            </select>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] ml-1">Date</label>
+                <input 
+                  type="date" 
+                  value={specificDate}
+                  onChange={e => setSpecificDate(e.target.value)}
+                  className="w-full bg-stone-900 border border-stone-800 rounded-2xl px-4 py-4 text-stone-100 text-[10px] uppercase font-bold outline-none" 
+                />
+              </div>
+              <div>
+                <label className="block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] ml-1">Time</label>
+                <input 
+                  type="time" 
+                  value={specificTime}
+                  onChange={e => setSpecificTime(e.target.value)}
+                  className="w-full bg-stone-900 border border-stone-800 rounded-2xl px-4 py-4 text-stone-100 text-[10px] uppercase font-bold outline-none" 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex space-x-3 pt-4">
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="flex-1 py-4 bg-stone-900 text-stone-500 font-black uppercase text-[10px] rounded-2xl border border-stone-800 hover:bg-stone-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={() => onSave({ 
+              type, 
+              advance_value: type === 'advance' ? advanceValue : undefined,
+              specific_date: type === 'specific' ? specificDate : undefined,
+              specific_time: type === 'specific' ? specificTime : undefined
+            })} 
+            className="flex-[2] py-4 bg-orange-800 text-stone-100 font-black uppercase text-[10px] rounded-2xl border border-orange-700 shadow-xl shadow-orange-950/40 active:scale-95 transition-transform"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SwipeableEventCard: React.FC<{
   item: ScheduleItem;
@@ -196,9 +300,22 @@ const SwipeableEventCard: React.FC<{
                   </span>
                </div>
                {item.reminder_set && (
-                 <div className="flex items-center space-x-2 bg-orange-950/20 px-3 py-1 rounded-full border border-orange-900/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">Reminder Active</span>
+                 <div className="flex flex-col items-end space-y-1">
+                   <div className="flex items-center space-x-2 bg-orange-950/20 px-3 py-1 rounded-full border border-orange-900/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">Reminder Active</span>
+                   </div>
+                   {item.reminder_config && (
+                     <span className="text-[8px] font-black text-stone-600 uppercase tracking-widest pr-2">
+                       {item.reminder_config.type === 'advance' 
+                         ? item.reminder_config.advance_value === '10m' ? '10 mins advance' :
+                           item.reminder_config.advance_value === '30m' ? '30 mins advance' :
+                           item.reminder_config.advance_value === '1h' ? '1 hour advance' :
+                           item.reminder_config.advance_value === '2h' ? '2 hours advance' :
+                           item.reminder_config.advance_value === '1d' ? '1 day advance' : item.reminder_config.advance_value
+                         : `${new Date(item.reminder_config.specific_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ ${item.reminder_config.specific_time}`}
+                     </span>
+                   )}
                  </div>
                )}
             </div>
@@ -258,22 +375,27 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
   initialSelectedDate, 
   initialFocusedItemId,
   autoOpenAddForm,
-  onFormOpened
-}, ref) => {
-  const [showForm, setShowForm] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(initialSelectedDate || new Date().toISOString().split('T')[0]);
-  const [selectedRange, setSelectedRange] = useState<string[]>([]);
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    type: 'deadline' as ScheduleType,
-    project_id: '',
-    notes: '',
-    reminder_set: false
-  });
+   onFormOpened
+ }, ref) => {
+   const [showForm, setShowForm] = useState(false);
+   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+   const [selectedDate, setSelectedDate] = useState<string | null>(initialSelectedDate || new Date().toISOString().split('T')[0]);
+   const [selectedRange, setSelectedRange] = useState<string[]>([]);
+   
+   const [showReminderPopup, setShowReminderPopup] = useState(false);
+   const [reminderTargetId, setReminderTargetId] = useState<string | null>(null);
+   const [isReminderFormSource, setIsReminderFormSource] = useState(false);
+ 
+   const [formData, setFormData] = useState({
+     title: '',
+     date: new Date().toISOString().split('T')[0],
+     type: 'deadline' as ScheduleType,
+     project_id: '',
+     notes: '',
+     reminder_set: false,
+     reminder_config: undefined as any
+   });
 
   useEffect(() => {
     if (initialSelectedDate) {
@@ -297,6 +419,41 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
     }
   }));
 
+  const handleToggleReminder = (id: string) => {
+    const item = mergedSchedule.find(i => i.id === id);
+    if (!item) return;
+
+    if (!item.reminder_set) {
+      // Turning it ON
+      setReminderTargetId(id);
+      setIsReminderFormSource(false);
+      setShowReminderPopup(true);
+    } else {
+      // Turning it OFF
+      onToggleReminder(id);
+    }
+  };
+
+  const handleReminderSave = (config: any) => {
+    if (isReminderFormSource) {
+      setFormData(prev => ({ ...prev, reminder_set: true, reminder_config: config }));
+    } else if (reminderTargetId) {
+      onToggleReminder(reminderTargetId, config);
+    }
+    setShowReminderPopup(false);
+    setReminderTargetId(null);
+    setIsReminderFormSource(false);
+  };
+
+  const handleReminderCancel = () => {
+    if (isReminderFormSource) {
+      setFormData(prev => ({ ...prev, reminder_set: false, reminder_config: undefined }));
+    }
+    setShowReminderPopup(false);
+    setReminderTargetId(null);
+    setIsReminderFormSource(false);
+  };
+
   const resetForm = (date?: string) => {
     setFormData({
       title: '',
@@ -304,7 +461,8 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
       type: 'deadline',
       project_id: '',
       notes: '',
-      reminder_set: false
+      reminder_set: false,
+      reminder_config: undefined
     });
     setEditingItemId(null);
     setShowForm(false);
@@ -317,7 +475,8 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
       type: item.type,
       project_id: item.project_id || '',
       notes: item.notes || '',
-      reminder_set: item.reminder_set
+      reminder_set: item.reminder_set,
+      reminder_config: item.reminder_config
     });
     setEditingItemId(item.id);
     setShowForm(true);
@@ -458,7 +617,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
                       key={item.id}
                       item={item}
                       onEdit={handleEdit}
-                      onToggleReminder={onToggleReminder}
+                      onToggleReminder={handleToggleReminder}
                       onRemove={onRemoveItem}
                       isInitiallyExpanded={item.id === initialFocusedItemId}
                     />
@@ -490,7 +649,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
                     key={item.id}
                     item={item}
                     onEdit={handleEdit}
-                    onToggleReminder={onToggleReminder}
+                    onToggleReminder={handleToggleReminder}
                     onRemove={onRemoveItem}
                   />
                 ))}
@@ -548,9 +707,45 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
                 </select>
               </div>
 
-              <div className="flex items-center space-x-3 p-4 bg-stone-900/40 rounded-2xl border border-stone-800/40">
-                <input type="checkbox" checked={formData.reminder_set} onChange={e => setFormData({...formData, reminder_set: e.target.checked})} className="w-5 h-5 accent-orange-700" id="rem-check" />
-                <label htmlFor="rem-check" className="text-stone-400 text-xs font-bold select-none cursor-pointer">Set Studio Reminder</label>
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center space-x-3 p-4 bg-stone-900/40 rounded-2xl border border-stone-800/40">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.reminder_set} 
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      if (checked) {
+                        setIsReminderFormSource(true);
+                        setShowReminderPopup(true);
+                      } else {
+                        setFormData({...formData, reminder_set: false, reminder_config: undefined});
+                      }
+                    }} 
+                    className="w-5 h-5 accent-orange-700" 
+                    id="rem-check" 
+                  />
+                  <label htmlFor="rem-check" className="text-stone-400 text-xs font-bold select-none cursor-pointer">Set Studio Reminder</label>
+                </div>
+                {formData.reminder_set && formData.reminder_config && (
+                  <div className="px-4 py-2 bg-orange-950/20 border border-orange-900/20 rounded-xl flex justify-between items-center animate-in slide-in-from-top-2 duration-300">
+                    <span className="text-[9px] font-black uppercase text-orange-500 tracking-widest">
+                      {formData.reminder_config.type === 'advance' 
+                         ? formData.reminder_config.advance_value === '10m' ? '10 mins advance' :
+                           formData.reminder_config.advance_value === '30m' ? '30 mins advance' :
+                           formData.reminder_config.advance_value === '1h' ? '1 hour advance' :
+                           formData.reminder_config.advance_value === '2h' ? '2 hours advance' :
+                           formData.reminder_config.advance_value === '1d' ? '1 day advance' : formData.reminder_config.advance_value
+                        : `${new Date(formData.reminder_config.specific_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ ${formData.reminder_config.specific_time}`}
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => { setIsReminderFormSource(true); setShowReminderPopup(true); }}
+                      className="text-[8px] font-black uppercase text-stone-500 hover:text-orange-500 transition-colors"
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -561,6 +756,13 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
           </div>
         </div>
       )}
+
+      <ReminderPopup 
+        isOpen={showReminderPopup}
+        onClose={handleReminderCancel}
+        onSave={handleReminderSave}
+        initialDate={selectedDate || undefined}
+      />
     </div>
   );
 });

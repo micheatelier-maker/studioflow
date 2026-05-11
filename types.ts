@@ -61,6 +61,12 @@ export interface ScheduleItem {
   project_name?: string;
   reminder_set: boolean;
   notes?: string;
+  reminder_config?: {
+    type: 'advance' | 'specific';
+    advance_value?: string;
+    specific_date?: string;
+    specific_time?: string;
+  };
 }
 
 export interface BlockStrategy {
