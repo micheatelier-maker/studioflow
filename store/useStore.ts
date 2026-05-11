@@ -349,7 +349,7 @@ export const useStore = () => {
     }
   };
 
-  const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string) => {
+  const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string, phases?: ProjectPhase[]) => {
     const newProject: Project = {
       id: Math.random().toString(36).substr(2, 9),
       name, description, category, status,
@@ -363,7 +363,7 @@ export const useStore = () => {
       unresolved_hurdles: [],
       mood_history: [],
       color: color || '#ea580c',
-      phases: [
+      phases: phases && phases.length > 0 ? phases : [
         { id: Math.random().toString(36).substr(2, 9), title: 'Beginning', startDate: new Date().toISOString(), endDate: null, is_complete: false }
       ]
     };

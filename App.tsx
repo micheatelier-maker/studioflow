@@ -243,7 +243,7 @@ const App: React.FC = () => {
           )}
         </Layout>
 
-        {showProjectForm && <ProjectCreateForm title="New Project" onSave={(name, description, status, category, tools, isArchived, color, phases) => { addProject(name, description, status, category, tools, isArchived, color); setShowProjectForm(false); }} onCancel={() => setShowProjectForm(false)} />}
+        {showProjectForm && <ProjectCreateForm title="New Project" onSave={(name, description, status, category, tools, isArchived, color, phases) => { addProject(name, description, status, category, tools, isArchived, color, phases); setShowProjectForm(false); }} onCancel={() => setShowProjectForm(false)} />}
         {showVault && (
           <Vault 
             projects={state.projects} 
