@@ -10,6 +10,7 @@ interface ProjectCardProps {
   onViewLedger: (project: Project) => void;
   onNewLog: (project: Project) => void;
   onUpdatePhases: (id: string, phases: ProjectPhase[]) => void;
+  onToggleLock: (id: string) => void;
 }
 
 /**
@@ -182,7 +183,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onEdit, 
   onViewLedger, 
   onNewLog,
-  onUpdatePhases
+  onUpdatePhases,
+  onToggleLock
 }) => {
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveInput, setArchiveInput] = useState('');
@@ -242,6 +244,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const handleTogglePhase = (phaseId: string) => {
+    if (project.is_locked) return;
     const updatedPhases = project.phases.map(p => 
       p.id === phaseId ? { ...p, is_complete: !p.is_complete } : p
     );
@@ -260,7 +263,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const handleMoveToNextPhase = () => {
-    if (!overduePhase) return;
+    if (!overduePhase || project.is_locked) return;
     const updatedPhases = project.phases.map(p => 
       p.id === overduePhase.id ? { ...p, is_complete: true } : p
     );
@@ -322,18 +325,40 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                   <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${getStatusColorClass(project.status).replace('text-', 'bg-')}`}></div>
                   <span className={`text-[9px] font-black uppercase tracking-widest ${getStatusColorClass(project.status)}`}>{project.status}</span>
                </div>
+               {project.is_locked && (
+                 <div className="flex items-center space-x-1.5 text-stone-600">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    <span className="text-[7px] font-black uppercase tracking-[0.3em]">Locked</span>
+                 </div>
+               )}
              </div>
              <h3 className="text-4xl font-black text-stone-100 tracking-tighter leading-none">{project.name}</h3>
              <p className="text-orange-600 text-sm font-black uppercase tracking-widest">{formatTotalTime(project.total_minutes)} Invested</p>
           </div>
-          <button 
-            onClick={() => onEdit(project)}
-            className="bg-stone-900/50 p-2.5 rounded-xl border border-stone-800 text-stone-500 hover:text-orange-500 active:scale-90 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => onToggleLock(project.id)}
+              className={`p-2.5 rounded-xl border transition-all duration-300 ${project.is_locked ? 'bg-orange-950/20 border-orange-900/30 text-orange-500' : 'bg-stone-900/50 border-stone-800 text-stone-600 hover:text-stone-400'}`}
+              title={project.is_locked ? "Unlock Arc" : "Lock Arc"}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                {project.is_locked ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7a4 4 0 118 0v4m0 0a2 2 0 100 4m0-4v4m-11 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2z" />
+                )}
+              </svg>
+            </button>
+            <button 
+              onClick={() => project.is_locked ? null : onEdit(project)}
+              disabled={project.is_locked}
+              className={`p-2.5 rounded-xl border transition-all duration-300 ${project.is_locked ? 'bg-stone-900/20 border-stone-900/20 text-stone-800 cursor-not-allowed' : 'bg-stone-900/50 border-stone-800 text-stone-500 hover:text-orange-500 active:scale-90'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+          </div>
         </header>
 
         {/* Project Intent Section (Locked Style) */}

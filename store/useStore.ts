@@ -349,12 +349,13 @@ export const useStore = () => {
     }
   };
 
-  const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string, phases?: ProjectPhase[]) => {
+  const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string, phases?: ProjectPhase[], is_locked: boolean = false) => {
     const newProject: Project = {
       id: Math.random().toString(36).substr(2, 9),
       name, description, category, status,
       created_at: new Date().toISOString(),
       is_archived: isArchived,
+      is_locked,
       total_minutes: 0,
       tools_and_materials: tools,
       technical_notes: [],
@@ -364,7 +365,7 @@ export const useStore = () => {
       mood_history: [],
       color: color || '#ea580c',
       phases: phases && phases.length > 0 ? phases : [
-        { id: Math.random().toString(36).substr(2, 9), title: 'Beginning', startDate: new Date().toISOString(), endDate: null, is_complete: false }
+        { id: Math.random().toString(36).substr(2, 9), title: 'Establishment', startDate: new Date().toISOString().split('T')[0], endDate: null, is_complete: false }
       ]
     };
 
@@ -401,7 +402,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { phases });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { phases, updatedAt: new Date().toISOString() });
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -409,6 +410,27 @@ export const useStore = () => {
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => p.id === id ? { ...p, phases } : p)
+      }));
+    }
+  };
+
+  const toggleProjectLock = async (id: string) => {
+    const project = state.projects.find(p => p.id === id);
+    if (!project) return;
+    
+    const newLockState = !project.is_locked;
+    
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/projects/${id}`;
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_locked: newLockState });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.map(p => p.id === id ? { ...p, is_locked: newLockState } : p)
       }));
     }
   };
@@ -682,7 +704,7 @@ export const useStore = () => {
   };
 
   return { 
-    state, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProject, updateProject, updateProjectPhases, addLog, updateLog, reorderProjects,
+    state, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProject, updateProject, updateProjectPhases, toggleProjectLock, addLog, updateLog, reorderProjects,
     archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, 
     updateScheduleItem, removeScheduleItem, toggleReminder, addProtocolLog, consumeTickets, addTickets,
     currentUser, signIn, signOut

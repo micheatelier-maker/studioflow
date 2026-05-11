@@ -91,6 +91,7 @@ export interface Project {
   mood_history: { date: string, level: number }[];
   phases: ProjectPhase[];
   color: string;
+  is_locked?: boolean;
 }
 
 export interface ArtistProfile {

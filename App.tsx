@@ -15,7 +15,7 @@ import { useStore } from './store/useStore';
 import { WorkshopLog, LogType, Project, ProjectStatus, ScheduleItem, ProjectPhase } from './types';
 
 const App: React.FC = () => {
-  const { state, addLog, updateLog, addProject, updateProject, updateProjectPhases, archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, updateScheduleItem, removeScheduleItem, toggleReminder, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProtocolLog, reorderProjects, consumeTickets, addTickets } = useStore();
+  const { state, addLog, updateLog, addProject, updateProject, updateProjectPhases, toggleProjectLock, archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, updateScheduleItem, removeScheduleItem, toggleReminder, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProtocolLog, reorderProjects, consumeTickets, addTickets } = useStore();
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'commitments' | 'flow' | 'artist'>('home');
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -188,6 +188,7 @@ const App: React.FC = () => {
                             onViewLedger={setSelectedLedgerProject} 
                             onNewLog={handleNewLogFromProject}
                             onUpdatePhases={updateProjectPhases}
+                            onToggleLock={toggleProjectLock}
                           />
                         )
                       )
