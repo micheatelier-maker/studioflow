@@ -345,45 +345,117 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
 
   return (
     <div className="pt-2 pb-32 animate-in fade-in duration-500 relative">
-      <section className="bg-[#1a1715] rounded-[2.5rem] border border-stone-800/40 p-6 mb-12 shadow-2xl">
-        <div className="flex justify-between items-center mb-6 px-2">
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-stone-100">
-            {currentCalendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          </h3>
-          <div className="flex space-x-2">
-            <button onClick={() => changeMonth(-1)} className="p-2 text-stone-500 hover:text-stone-100">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <button onClick={() => changeMonth(1)} className="p-2 text-stone-500 hover:text-stone-100">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </button>
-          </div>
+      <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+        {/* LEFT COLUMN: Calendar */}
+        <div className="lg:sticky lg:top-4">
+          <section className="bg-[#1a1715] rounded-[2.5rem] border border-stone-800/40 p-6 mb-12 lg:mb-0 shadow-2xl">
+            <div className="flex justify-between items-center mb-6 px-2">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-stone-100">
+                {currentCalendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+              </h3>
+              <div className="flex space-x-2">
+                <button onClick={() => changeMonth(-1)} className="p-2 text-stone-500 hover:text-stone-100">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <button onClick={() => changeMonth(1)} className="p-2 text-stone-500 hover:text-stone-100">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={`${day}-${i}`} className="text-center text-[8px] font-black text-stone-600 uppercase tracking-widest py-1">{day}</div>
+              ))}
+              {calendarDays.map((d, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => d && setSelectedDate(d.dateStr)}
+                  className="aspect-square flex flex-col items-center justify-center relative active:scale-90 transition-transform"
+                >
+                  {d && (
+                    <>
+                      <div className={`w-full h-full flex items-center justify-center rounded-xl text-[10px] font-bold transition-all ${d.isSelected ? 'bg-orange-800 text-stone-100 shadow-lg scale-105' : d.isToday ? 'border border-orange-700 text-orange-500' : 'text-stone-400'}`}>
+                        {d.day}
+                      </div>
+                      {d.hasEvents && (
+                        <div className={`absolute bottom-1.5 w-1 h-1 rounded-full ${d.isSelected ? 'bg-stone-100' : 'bg-orange-500'}`}></div>
+                      )}
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-            <div key={`${day}-${i}`} className="text-center text-[8px] font-black text-stone-600 uppercase tracking-widest py-1">{day}</div>
-          ))}
-          {calendarDays.map((d, i) => (
-            <button 
-              key={i} 
-              onClick={() => d && setSelectedDate(d.dateStr)}
-              className="aspect-square flex flex-col items-center justify-center relative active:scale-90 transition-transform"
-            >
-              {d && (
-                <>
-                  <div className={`w-full h-full flex items-center justify-center rounded-xl text-[10px] font-bold transition-all ${d.isSelected ? 'bg-orange-800 text-stone-100 shadow-lg scale-105' : d.isToday ? 'border border-orange-700 text-orange-500' : 'text-stone-400'}`}>
-                    {d.day}
+        {/* RIGHT COLUMN: Commitments List */}
+        <div className="space-y-12">
+          {selectedDate && (
+            <div className="space-y-5">
+              <div className="flex justify-between items-center px-2">
+                <h3 className="text-stone-100 text-[10px] font-black uppercase tracking-[0.3em]">
+                  {getDayLabel(selectedDate)}
+                </h3>
+                <button 
+                  onClick={() => {
+                    resetForm(selectedDate);
+                    setShowForm(true);
+                  }}
+                  className="text-[9px] font-black uppercase tracking-widest text-orange-600 border border-orange-900/20 px-3 py-1 rounded-lg"
+                >
+                  + Add Item
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {selectedEvents.length > 0 ? (
+                  selectedEvents.map((item) => (
+                    <SwipeableEventCard 
+                      key={item.id}
+                      item={item}
+                      onEdit={handleEdit}
+                      onToggleReminder={onToggleReminder}
+                      onRemove={onRemoveItem}
+                      isInitiallyExpanded={item.id === initialFocusedItemId}
+                    />
+                  ))
+                ) : (
+                  <div 
+                    onClick={() => {
+                      resetForm(selectedDate);
+                      setShowForm(true);
+                    }}
+                    className="bg-stone-900/10 border-2 border-dashed border-stone-800 rounded-[2.5rem] p-10 text-center cursor-pointer hover:border-orange-900/30 transition-colors"
+                  >
+                    <p className="text-stone-600 text-sm italic font-medium mb-4">No goals recorded for this day.</p>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-900/10 px-6 py-3 rounded-2xl border border-orange-900/20">Add Commitment</span>
                   </div>
-                  {d.hasEvents && (
-                    <div className={`absolute bottom-1.5 w-1 h-1 rounded-full ${d.isSelected ? 'bg-stone-100' : 'bg-orange-500'}`}></div>
-                  )}
-                </>
-              )}
-            </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedDate && Object.keys(groupedSchedule).length > 0 && Object.keys(groupedSchedule).map((date) => (
+            <div key={date} className="space-y-5">
+              <h3 className="text-stone-600 text-[10px] font-black uppercase tracking-[0.3em] ml-2 sticky top-2 z-10 bg-[#0f0d0c]/80 backdrop-blur-md py-2">
+                {getDayLabel(date)}
+              </h3>
+              <div className="space-y-4">
+                {groupedSchedule[date].map((item) => (
+                  <SwipeableEventCard 
+                    key={item.id}
+                    item={item}
+                    onEdit={handleEdit}
+                    onToggleReminder={onToggleReminder}
+                    onRemove={onRemoveItem}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-stone-950/95 z-[300] flex items-center justify-center p-6 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
@@ -446,72 +518,6 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
           </div>
         </div>
       )}
-
-      <div className="space-y-12">
-        {selectedDate && (
-          <div className="space-y-5">
-            <div className="flex justify-between items-center px-2">
-              <h3 className="text-stone-100 text-[10px] font-black uppercase tracking-[0.3em]">
-                {getDayLabel(selectedDate)}
-              </h3>
-              <button 
-                onClick={() => {
-                  resetForm(selectedDate);
-                  setShowForm(true);
-                }}
-                className="text-[9px] font-black uppercase tracking-widest text-orange-600 border border-orange-900/20 px-3 py-1 rounded-lg"
-              >
-                + Add Item
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {selectedEvents.length > 0 ? (
-                selectedEvents.map((item) => (
-                  <SwipeableEventCard 
-                    key={item.id}
-                    item={item}
-                    onEdit={handleEdit}
-                    onToggleReminder={onToggleReminder}
-                    onRemove={onRemoveItem}
-                    isInitiallyExpanded={item.id === initialFocusedItemId}
-                  />
-                ))
-              ) : (
-                <div 
-                  onClick={() => {
-                    resetForm(selectedDate);
-                    setShowForm(true);
-                  }}
-                  className="bg-stone-900/10 border-2 border-dashed border-stone-800 rounded-[2.5rem] p-10 text-center cursor-pointer hover:border-orange-900/30 transition-colors"
-                >
-                  <p className="text-stone-600 text-sm italic font-medium mb-4">No goals recorded for this day.</p>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-900/10 px-6 py-3 rounded-2xl border border-orange-900/20">Add Commitment</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {!selectedDate && Object.keys(groupedSchedule).length > 0 && Object.keys(groupedSchedule).map((date) => (
-          <div key={date} className="space-y-5">
-            <h3 className="text-stone-600 text-[10px] font-black uppercase tracking-[0.3em] ml-2 sticky top-2 z-10 bg-[#0f0d0c]/80 backdrop-blur-md py-2">
-              {getDayLabel(date)}
-            </h3>
-            <div className="space-y-4">
-              {groupedSchedule[date].map((item) => (
-                <SwipeableEventCard 
-                  key={item.id}
-                  item={item}
-                  onEdit={handleEdit}
-                  onToggleReminder={onToggleReminder}
-                  onRemove={onRemoveItem}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 });

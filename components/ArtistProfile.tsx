@@ -69,13 +69,13 @@ const CreativeDNA: React.FC<{
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const centerY = canvas.height / 2;
 
-      const dots = 40;
-      const spacing = canvas.width / (dots - 1);
+      const spacing = 14;
+      const dots = Math.ceil(canvas.width / spacing) + 1;
       
       ctx.lineWidth = 1.2;
       for (let i = 0; i < dots; i++) {
         const x = i * spacing;
-        const angle = frame * speed + (i * 0.35);
+        const angle = frame * speed + (x * 0.028);
         
         const y1 = centerY + Math.sin(angle) * amplitude;
         const z1 = Math.cos(angle);

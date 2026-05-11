@@ -6,10 +6,11 @@ interface ProjectLedgerProps {
   project: Project;
   logs: WorkshopLog[];
   onClose: () => void;
+  initialFocusedLogId?: string | null;
 }
 
-const ProjectLedger: React.FC<ProjectLedgerProps> = ({ project, logs, onClose }) => {
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+const ProjectLedger: React.FC<ProjectLedgerProps> = ({ project, logs, onClose, initialFocusedLogId }) => {
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(initialFocusedLogId || null);
   
   const projectLogs = [...logs]
     .filter(l => l.project_id === project.id)

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { HelpCircle, Calendar as CalendarIcon, Clock, ChevronRight } from 'lucide-react';
+import { HelpCircle, Calendar as CalendarIcon, Clock, ChevronRight, Heart } from 'lucide-react';
 import { AppState, Project, WorkshopLog, ScheduleItem, BlockStrategy } from '../types';
 import BlockRemoverSession from './BlockRemoverSession';
 import Calendar from './Calendar';
@@ -280,44 +280,132 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [state.schedule, state.artistProfile.deadlines]);
 
   const renderRecentSessions = () => (
-    <section className="space-y-4">
+    <section className="space-y-8">
       <div className="flex items-end justify-between px-1">
-        <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Recent Sessions</h2>
+        <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Latest Ripples</h2>
+        <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest">3 Recent Cycles</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {recentLogs.map((log) => (
-          <button 
-            key={log.id} 
-            onClick={() => onDeepDiveClick?.(log)}
-            className="bg-[#1a1715] border border-stone-800/40 p-4 rounded-3xl text-left hover:border-orange-900/30 transition-all group"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div className="bg-stone-900/50 p-2 rounded-xl text-orange-500">
-                <Clock className="w-3.5 h-3.5" />
+      
+      <div className="space-y-6">
+        {recentLogs.map((log, index) => (
+          <div key={log.id} className="relative">
+            {/* Connection line between cards */}
+            {index < recentLogs.length - 1 && (
+              <div className="absolute left-8 top-full w-px h-6 bg-gradient-to-b from-orange-900/40 to-transparent z-0"></div>
+            )}
+            
+            <div 
+              onClick={() => setExpandedRippleId(expandedRippleId === log.id ? null : log.id)}
+              className={`w-full bg-[#1a1715]/40 border rounded-[2.5rem] p-7 transition-all duration-500 text-left flex flex-col group cursor-pointer active:scale-[0.99] relative z-10 ${expandedRippleId === log.id ? 'border-orange-900/40 ring-1 ring-orange-900/20 shadow-2xl shadow-orange-950/20' : 'border-stone-800/20 hover:border-orange-900/30'}`}
+            >
+              <div className="space-y-2 w-full relative">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-stone-600 font-black uppercase tracking-[0.2em] mb-1">
+                      {new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ {new Date(log.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <h4 className="text-stone-200 font-bold text-base tracking-tight leading-tight group-hover:text-orange-400 transition-colors pr-4 line-clamp-1">
+                      {log.summary || log.how_it_went || log.wins || "Studio Session"}
+                    </h4>
+                  </div>
+                  <div className="flex flex-col items-end space-y-1">
+                    <span className="text-[8px] text-stone-600 font-black tabular-nums flex-shrink-0">
+                      {(() => {
+                        const mins = log.actual_duration_minutes || log.duration_minutes || 0;
+                        const h = Math.floor(mins / 60);
+                        const m = mins % 60;
+                        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                      })()}
+                    </span>
+                    {log.audio_base64 && (
+                      <div className="flex items-center space-x-1 text-orange-500/60">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {expandedRippleId !== log.id && (
+                  <div className="mt-4 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300">
+                    <div className="flex items-center space-x-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-orange-600/60 flex-shrink-0 animate-pulse"></div>
+                       <p className="text-stone-500 text-[10px] font-medium italic opacity-90 pr-2">
+                         {log.wins || log.summary || "Deep creative flow recorded."}
+                       </p>
+                    </div>
+                    <span className="text-[8px] text-orange-900 font-black uppercase tracking-widest whitespace-nowrap">View Log</span>
+                  </div>
+                )}
               </div>
-              <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">
-                {new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-              </span>
+
+              {expandedRippleId === log.id && (
+                <div className="mt-6 pt-6 border-t border-stone-800/40 space-y-5 animate-in slide-in-from-top-2 duration-300 w-full">
+                  <div className="grid grid-cols-2 gap-6">
+                    {log.wins && (
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-orange-600 tracking-widest block mb-1.5">Highlights</span>
+                        <p className="text-stone-200 text-[11px] leading-relaxed font-bold">{log.wins}</p>
+                      </div>
+                    )}
+                    {log.challenges && (
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Low Lights</span>
+                        <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.challenges}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    {log.next_steps && (
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Next Steps</span>
+                        <p className="text-stone-400 text-[11px] leading-relaxed">{log.next_steps}</p>
+                      </div>
+                    )}
+                    {log.project_name && (
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Project</span>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-1 h-1 rounded-full bg-orange-600"></div>
+                          <p className="text-stone-300 text-[10px] font-black uppercase tracking-wider">{log.project_name}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    {log.audio_base64 && (
+                      <div className="col-span-2 sm:col-span-1">
+                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Voice Log</span>
+                        <div className="flex items-center space-x-2 text-orange-500">
+                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                           <span className="text-[10px] font-medium italic">Captured @ {new Date(log.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {log.how_it_went && (
+                    <div className="bg-stone-900/50 p-4 rounded-2xl border border-stone-800/40">
+                      <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Context</span>
+                      <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.how_it_went}</p>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onDeepDiveClick?.(log); }}
+                    className="w-full py-3 bg-stone-900/80 hover:bg-stone-800 text-stone-400 hover:text-stone-200 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border border-stone-800/60 transition-all text-center"
+                  >
+                    Open Full Log Entry
+                  </button>
+                </div>
+              )}
             </div>
-            <h4 className="text-stone-100 font-bold text-xs line-clamp-1 group-hover:text-orange-400 transition-colors">
-              {log.summary || log.how_it_went || "Studio Session"}
-            </h4>
-            <div className="flex items-center justify-between mt-3">
-              <span className="text-[8px] text-stone-500 font-black tabular-nums uppercase">
-                {(() => {
-                  const mins = log.actual_duration_minutes || log.duration_minutes || 0;
-                  const h = Math.floor(mins / 60);
-                  const m = mins % 60;
-                  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                })()}
-              </span>
-              <ChevronRight className="w-3 h-3 text-stone-800 group-hover:text-orange-500 transition-colors" />
-            </div>
-          </button>
+          </div>
         ))}
         {recentLogs.length === 0 && (
-          <div className="col-span-full py-8 text-center border-2 border-dashed border-stone-900 rounded-3xl bg-stone-900/10">
-            <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.2em]">No recent creative logs</p>
+          <div className="py-12 text-center border-2 border-dashed border-stone-900/40 rounded-[2.5rem] bg-stone-900/10">
+            <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.3em]">No creative ripples detected</p>
           </div>
         )}
       </div>
@@ -349,66 +437,65 @@ const Dashboard: React.FC<DashboardProps> = ({
            </div>
          </div>
       </button>
-
-      {/* Latest Ripple */}
-      {primeThreadLog && (
-        <div className="space-y-3 pt-2">
-          <div className="flex justify-between items-end px-1">
-            <h4 className="text-[9px] text-stone-600 font-black uppercase tracking-[0.3em]">Latest Ripple</h4>
-            <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest">
-              {new Date(primeThreadLog.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-          <button 
-            onClick={() => setExpandedRippleId(expandedRippleId === primeThreadLog.id ? null : primeThreadLog.id)}
-            className={`w-full bg-stone-900/30 border rounded-[2.2rem] p-6 transition-all duration-500 text-left flex flex-col group active:scale-[0.99] ${expandedRippleId === primeThreadLog.id ? 'border-orange-900/40 ring-1 ring-orange-900/20' : 'border-stone-800/20 hover:border-orange-900/30'}`}
-          >
-            <div className="space-y-1 w-full relative">
-              <div className="flex justify-between items-start">
-                <h4 className="text-stone-200 font-bold text-sm tracking-tight leading-tight group-hover:text-orange-400 transition-colors pr-4 line-clamp-1">
-                  {primeThreadLog.summary || primeThreadLog.how_it_went || primeThreadLog.wins || "Studio Session"}
-                </h4>
-                <span className="text-[8px] text-stone-600 font-black tabular-nums flex-shrink-0">
-                  {(() => {
-                    const mins = primeThreadLog.actual_duration_minutes || primeThreadLog.duration_minutes || 0;
-                    const h = Math.floor(mins / 60);
-                    const m = mins % 60;
-                    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                  })()}
-                </span>
-              </div>
-              
-              {expandedRippleId !== primeThreadLog.id && (
-                <div className="mt-3 flex items-start space-x-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                  <div className="w-1 h-3 rounded-full bg-orange-600/60 mt-0.5 flex-shrink-0"></div>
-                  <p className="text-stone-400 text-[10px] font-medium italic line-clamp-1 opacity-90 pr-2">
-                    {primeThreadLog.wins || primeThreadLog.challenges || primeThreadLog.summary || "Deep creative flow"}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {expandedRippleId === primeThreadLog.id && (
-              <div className="mt-5 pt-5 border-t border-stone-800/40 space-y-4 animate-in slide-in-from-top-2 duration-300 w-full">
-                {primeThreadLog.how_it_went && (
-                  <div>
-                    <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1">Summary</span>
-                    <p className="text-stone-400 text-[11px] leading-relaxed italic">{primeThreadLog.how_it_went}</p>
-                  </div>
-                )}
-                {primeThreadLog.wins && (
-                  <div>
-                    <span className="text-[8px] font-black uppercase text-orange-600 tracking-widest block mb-1">Highlights</span>
-                    <p className="text-stone-200 text-[11px] leading-relaxed font-bold">{primeThreadLog.wins}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </button>
-        </div>
-      )}
     </section>
   );
+
+  const renderSelectedDateCommitments = () => {
+    if (!dashboardSelectedDate) return null;
+    
+    const commitments = groupedSchedule[dashboardSelectedDate] || [];
+    const isToday = dashboardSelectedDate === new Date().toISOString().split('T')[0];
+    const dateLabel = isToday 
+      ? "Today's Commitments" 
+      : `${new Date(dashboardSelectedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} Commitments`;
+
+    return (
+      <section className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+        <div className="flex justify-between items-end px-1">
+          <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">{dateLabel}</h2>
+          {commitments.length > 0 && (
+            <span className="text-orange-600 text-[8px] font-black uppercase tracking-widest">
+              {commitments.length} {commitments.length === 1 ? 'Target' : 'Targets'}
+            </span>
+          )}
+        </div>
+        
+        <div className="space-y-3">
+          {commitments.map((item) => (
+            <button 
+              key={item.id} 
+              onClick={() => onCommitmentClick(item)}
+              className="w-full bg-[#1a1715]/40 border border-stone-800/20 rounded-[2.5rem] p-6 text-left flex items-center justify-between group hover:border-orange-900/30 transition-all active:scale-[0.98] handcrafted-shadow"
+            >
+              <div className="flex items-center space-x-5">
+                <div className="bg-stone-900/80 p-3 rounded-2xl text-orange-500 border border-stone-800/40 group-hover:scale-110 transition-transform">
+                  {getScheduleTypeIcon(item.type)}
+                </div>
+                <div>
+                  <h4 className="text-stone-100 font-bold text-xs group-hover:text-orange-400 transition-colors uppercase tracking-tight line-clamp-1">{item.title}</h4>
+                  <div className="flex items-center space-x-2 mt-0.5">
+                    <span className="text-stone-600 text-[8px] font-black uppercase tracking-widest">{item.type}</span>
+                    {item.reminder_set && (
+                      <div className="flex items-center space-x-1">
+                        <div className="w-1 h-1 rounded-full bg-orange-600 animate-pulse"></div>
+                        <span className="text-[7px] text-orange-900 font-black uppercase tracking-tighter">Alert On</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-800 group-hover:text-orange-500 transition-colors translate-x-0 group-hover:translate-x-1 duration-300" />
+            </button>
+          ))}
+          {commitments.length === 0 && (
+            <div className="py-12 text-center border-2 border-dashed border-stone-900/20 rounded-[2.5rem] bg-stone-900/5">
+              <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.3em] italic">Open flow for this date</p>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  };
 
   const renderCommitments = () => (
     <section className="space-y-6">
@@ -672,7 +759,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <div key={l} className={`w-1.5 h-3 rounded-full ${l <= item.level ? 'bg-orange-600' : 'bg-stone-800 opacity-30'}`}></div>
                             ))}
                           </div>
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[8px] text-stone-600 font-black uppercase tracking-widest">
+                                {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </span>
+                              <span className="text-[8px] text-stone-700 font-black tabular-nums">
+                                {new Date(item.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
                             <p className="text-stone-100 text-[11px] font-bold italic pr-2">
                               {item.note || "No notes."}
                             </p>
@@ -699,23 +794,26 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="lg:grid lg:grid-cols-3 lg:gap-10 lg:items-start">
         {/* LEFT COLUMN: Commitments + Recent Sessions + Prime Thread */}
-        <div className="lg:col-span-2 space-y-10">
+        <div className="lg:col-span-2 space-y-12">
           {renderCommitments()}
           {renderRecentSessions()}
           {renderPrimeThread()}
         </div>
 
-        {/* RIGHT COLUMN: Calendar */}
-        <div className="lg:col-span-1 space-y-10">
-          <div className="hidden lg:block space-y-4">
-             <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em] px-1">Commitments Calendar</h2>
-             <Calendar 
-                currentCalendarDate={currentCalendarDate} 
-                onMonthChange={changeMonth} 
-                selectedDate={dashboardSelectedDate} 
-                onDateSelect={setDashboardSelectedDate} 
-                groupedSchedule={groupedSchedule} 
-             />
+        {/* RIGHT COLUMN: Calendar + Selected Date Commitments */}
+        <div className="hidden lg:block lg:col-span-1 space-y-10 lg:mt-0">
+          <div className="space-y-10">
+             <div className="space-y-4">
+                <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em] px-1">Commitments Calendar</h2>
+                <Calendar 
+                    currentCalendarDate={currentCalendarDate} 
+                    onMonthChange={changeMonth} 
+                    selectedDate={dashboardSelectedDate} 
+                    onDateSelect={setDashboardSelectedDate} 
+                    groupedSchedule={groupedSchedule} 
+                />
+             </div>
+             {renderSelectedDateCommitments()}
           </div>
         </div>
       </div>
@@ -734,31 +832,35 @@ const Dashboard: React.FC<DashboardProps> = ({
       >
         <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,88,12,0.2)_0%,transparent_70%)] transition-all duration-1000 pointer-events-none ${isWarmGlow ? 'opacity-100 scale-110' : 'opacity-0 scale-50'}`}></div>
         
-        <div className="flex justify-between items-center px-1 relative z-10 mb-8 whitespace-nowrap">
-          <h2 className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-700 ${isWarmGlow ? 'text-orange-500' : 'text-rose-600'}`}>Block Recovery Lab</h2>
-          <div className="flex items-center space-x-6">
-            <div className="flex bg-stone-900/50 p-1 rounded-xl border border-stone-800/40">
-              <button 
-                onClick={() => setActiveLabTab('protocols')}
-                className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeLabTab === 'protocols' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-300'}`}
-              >
-                Protocols
-              </button>
-              <button 
-                onClick={() => setActiveLabTab('history')}
-                className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeLabTab === 'history' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-300'}`}
-              >
-                History
-              </button>
-            </div>
-            <button onClick={() => setShowLabInfo(true)} className="text-stone-600 hover:text-orange-500 transition-colors"><HelpCircle className="w-4 h-4" /></button>
+        <div className="flex flex-col space-y-6 px-1 relative z-10 mb-12">
+          <div className="flex justify-between items-center">
+            <h2 className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-700 ${isWarmGlow ? 'text-orange-500' : 'text-rose-600'}`}>Block Recovery Lab</h2>
+            <button onClick={() => setShowLabInfo(true)} className="text-stone-600 hover:text-orange-500 transition-colors active:scale-90"><HelpCircle className="w-4 h-4" /></button>
+          </div>
+          
+          <div className="flex bg-stone-900/50 p-1 rounded-xl border border-stone-800/40 w-fit">
+            <button 
+              onClick={() => setActiveLabTab('protocols')}
+              className={`px-6 py-2.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeLabTab === 'protocols' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-300'}`}
+            >
+              Protocols
+            </button>
+            <button 
+              onClick={() => setActiveLabTab('history')}
+              className={`px-6 py-2.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeLabTab === 'history' ? 'bg-orange-800 text-stone-100 shadow-lg' : 'text-stone-500 hover:text-stone-300'}`}
+            >
+              History
+            </button>
           </div>
         </div>
 
         {/* 2-Column Layout for Lab Content on Desktop */}
         <div className="lg:grid lg:grid-cols-12 lg:gap-10 relative z-10">
           <div className="lg:col-span-5 space-y-6">
-            <h3 className="text-[9px] text-stone-600 font-black uppercase tracking-widest px-1">Recommended Protocol</h3>
+            <div className="flex items-center space-x-2 px-1">
+              <div className="w-1 h-1 rounded-full bg-orange-600 animate-pulse"></div>
+              <h3 className="text-[9px] text-stone-600 font-black uppercase tracking-widest">Try this ONE</h3>
+            </div>
             {activeLabTab === 'protocols' && primeRecommendation ? (
               <div 
                 onClick={() => setExpandedBlockId(expandedBlockId === primeRecommendation.strategy.id ? null : primeRecommendation.strategy.id)}
@@ -768,6 +870,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-4 relative z-10">
                    <div className="flex justify-between items-center">
                       <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest bg-orange-950/40 px-3 py-1 rounded-lg border border-orange-900/20">{primeRecommendation.reason}</span>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateBlockStrategy?.(primeRecommendation.strategy.id, { is_favorite: !primeRecommendation.strategy.is_favorite });
+                          }}
+                          className={`transition-all duration-300 p-1.5 rounded-lg border ${primeRecommendation.strategy.is_favorite ? 'bg-orange-950/40 border-orange-900/40 text-orange-500 scale-110' : 'bg-stone-900/40 border-stone-800 text-stone-600 hover:text-stone-400'}`}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${primeRecommendation.strategy.is_favorite ? 'fill-orange-500' : ''}`} />
+                        </button>
+                      </div>
                    </div>
                    <h3 className="text-stone-50 font-black text-2xl leading-tight tracking-tight">{primeRecommendation.strategy.name}</h3>
                    <p className="text-stone-400 text-xs leading-relaxed italic font-medium line-clamp-3">{primeRecommendation.strategy.description}</p>
@@ -786,7 +899,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
           </div>
 
-          <div className="lg:col-span-7 space-y-6 mt-10 lg:mt-0">
+          <div className="lg:col-span-12 space-y-6 mt-10 lg:mt-0">
             <div className="flex justify-between items-end px-1">
               <h3 className="text-[9px] text-stone-600 font-black uppercase tracking-widest">Protocol Library</h3>
               <button 
@@ -798,33 +911,105 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             
             {activeLabTab === 'protocols' ? (
-              <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory">
+              <div className="flex overflow-x-auto gap-6 pb-6 no-scrollbar snap-x snap-mandatory px-1">
                 {state.blockStrategies.map((s, i) => (
-                  <button 
+                  <div 
                     key={s.id} 
-                    onClick={() => handleDeploy(s)}
-                    className="flex-shrink-0 w-[180px] sm:w-[220px] bg-stone-950/40 border border-stone-800/40 p-5 rounded-3xl text-left hover:border-orange-900/30 transition-all group flex items-start justify-between snap-center"
+                    className="flex-shrink-0 w-[280px] sm:w-[320px] bg-[#1a1715]/40 border border-stone-800/40 rounded-[2.5rem] p-7 flex flex-col justify-between space-y-5 shadow-xl relative overflow-hidden transition-all duration-300 snap-center group hover:border-orange-900/30"
                   >
-                    <div className="space-y-1">
-                      <h4 className="text-stone-100 font-bold text-xs tracking-tight group-hover:text-orange-400 transition-colors uppercase">{s.name}</h4>
-                      <p className="text-stone-600 text-[9px] font-medium italic tabular-nums">{s.duration}m duration</p>
-                    </div>
-                    <ChevronRight className="w-3 h-3 text-stone-800 group-hover:text-orange-500 mt-1" />
-                  </button>
+                     <div className="space-y-4 relative z-10">
+                        <div className="flex justify-between items-center">
+                           <div className="flex items-center space-x-2">
+                             <span className="text-[8px] font-black text-stone-700 uppercase tracking-widest">{s.duration}m Protocol</span>
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 onUpdateBlockStrategy?.(s.id, { is_favorite: !s.is_favorite });
+                               }}
+                               className={`transition-all duration-300 p-1 rounded-md ${s.is_favorite ? 'text-orange-500 scale-110' : 'text-stone-800 hover:text-stone-600 hover:scale-105'}`}
+                             >
+                               <Heart className={`w-3 h-3 ${s.is_favorite ? 'fill-orange-500' : ''}`} />
+                             </button>
+                           </div>
+                           {s.is_custom && (
+                             <div className="flex items-center space-x-2">
+                               <button 
+                                 onClick={(e) => { e.stopPropagation(); handleEditStrategy(s); }}
+                                 className="text-stone-800 hover:text-stone-400 transition-colors"
+                               >
+                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                               </button>
+                               {onRemoveBlockStrategy && (
+                                 <button 
+                                   onClick={(e) => { e.stopPropagation(); onRemoveBlockStrategy(s.id); }}
+                                   className="text-stone-900 hover:text-rose-900 transition-colors"
+                                 >
+                                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                                 </button>
+                               )}
+                             </div>
+                           )}
+                        </div>
+                        <h4 className="text-stone-100 font-bold text-sm tracking-tight group-hover:text-orange-400 transition-colors uppercase pr-4">{s.name}</h4>
+                        <p className="text-stone-500 text-[10px] leading-relaxed italic font-medium line-clamp-2 min-h-[30px]">{s.description}</p>
+                        <button 
+                          onClick={() => handleDeploy(s)}
+                          className="w-full py-4 bg-stone-900/50 text-stone-500 font-black uppercase text-[9px] tracking-[0.3em] rounded-2xl border border-stone-800 group-hover:bg-orange-800 group-hover:text-stone-100 group-hover:border-orange-700 transition-all active:scale-95 shadow-lg"
+                        >
+                          Deploy Protocol
+                        </button>
+                     </div>
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar pr-2 font-medium">
-                {state.protocolLogs.slice(0, 5).map(log => (
-                  <div key={log.id} className="bg-stone-900/40 border border-stone-800/40 p-4 rounded-2xl flex justify-between items-center">
-                    <div>
-                      <h4 className="text-stone-100 font-bold text-[11px]">{log.strategyName}</h4>
-                      <span className="text-[8px] text-stone-600 font-black uppercase">{new Date(log.date).toLocaleDateString()}</span>
-                    </div>
-                    <span className="text-orange-600 text-[9px] font-black tabular-nums">{log.duration}m</span>
+              <div className="space-y-8 max-h-[400px] overflow-y-auto no-scrollbar pr-2 font-medium">
+                {/* Favorites Section */}
+                <div className="space-y-3">
+                  <h4 className="text-[9px] text-stone-600 font-black uppercase tracking-widest px-1">Favourite Protocols</h4>
+                  <div className="flex flex-col gap-2">
+                    {state.blockStrategies.filter(s => s.is_favorite).length > 0 ? (
+                      state.blockStrategies.filter(s => s.is_favorite).map(s => (
+                        <div key={s.id} className="bg-orange-900/10 border border-orange-900/20 p-4 rounded-2xl flex justify-between items-center group hover:border-orange-900/40 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-orange-900/20 rounded-xl">
+                              <Heart className="w-3 h-3 text-orange-500 fill-orange-500" />
+                            </div>
+                            <div>
+                              <h4 className="text-stone-100 font-bold text-[11px] uppercase tracking-tight">{s.name}</h4>
+                              <p className="text-[8px] text-stone-600 font-black uppercase">{s.duration}m duration</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleDeploy(s)}
+                            className="px-4 py-2 bg-orange-800/10 text-orange-500 font-black uppercase text-[8px] tracking-widest rounded-xl border border-orange-800/20 hover:bg-orange-800 hover:text-stone-100 transition-all active:scale-95"
+                          >
+                            Deploy
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-stone-800 text-[9px] italic px-1">No favourites yet</p>
+                    )}
                   </div>
-                ))}
-                {state.protocolLogs.length === 0 && <p className="text-center text-stone-700 text-[10px] italic py-4">No history yet</p>}
+                </div>
+
+                {/* History Section */}
+                <div className="space-y-3">
+                  <h4 className="text-[9px] text-stone-600 font-black uppercase tracking-widest px-1">Recent Activity</h4>
+                  <div className="space-y-2">
+                    {state.protocolLogs.slice(0, 10).map(log => (
+                      <div key={log.id} className="bg-stone-900/40 border border-stone-800/40 p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <h4 className="text-stone-100 font-bold text-[11px]">{log.strategyName}</h4>
+                          <span className="text-[8px] text-stone-600 font-black uppercase">{new Date(log.date).toLocaleDateString()}</span>
+                        </div>
+                        <span className="text-orange-600 text-[9px] font-black tabular-nums">{log.duration}m</span>
+                      </div>
+                    ))}
+                    {state.protocolLogs.length === 0 && <p className="text-stone-800 text-[9px] italic px-1">No history yet</p>}
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [focusedScheduleDate, setFocusedScheduleDate] = useState<string | null>(null);
   const [focusedScheduleItemId, setFocusedScheduleItemId] = useState<string | null>(null);
   const [activeProjectInView, setActiveProjectInView] = useState<string | null>(null);
+  const [focusedLogId, setFocusedLogId] = useState<string | null>(null);
 
   const schedulePageRef = useRef<{ openAddForm: () => void } | null>(null);
 
@@ -65,9 +66,15 @@ const App: React.FC = () => {
   };
 
   const handleDeepDiveClick = (log: WorkshopLog) => {
-    setIsFreshLog(false);
-    setIsDeepDiveMode(true);
-    setExtractedData(log);
+    const project = state.projects.find(p => p.id === log.project_id);
+    if (project) {
+      setSelectedLedgerProject(project);
+      setFocusedLogId(log.id);
+    } else {
+      setIsFreshLog(false);
+      setIsDeepDiveMode(true);
+      setExtractedData(log);
+    }
   };
 
   const handleNewLogFromProject = (project: Project) => {
@@ -254,7 +261,17 @@ const App: React.FC = () => {
             onClose={() => setShowVault(false)} 
           />
         )}
-        {selectedLedgerProject && <ProjectLedger project={selectedLedgerProject} logs={state.logs} onClose={() => setSelectedLedgerProject(null)} />}
+        {selectedLedgerProject && (
+          <ProjectLedger 
+            project={selectedLedgerProject} 
+            logs={state.logs} 
+            initialFocusedLogId={focusedLogId}
+            onClose={() => {
+              setSelectedLedgerProject(null);
+              setFocusedLogId(null);
+            }} 
+          />
+        )}
 
         {showTypePicker && (
           <div className="fixed inset-0 bg-stone-950/80 backdrop-blur-md z-[150] flex items-end safe-area-bottom">
