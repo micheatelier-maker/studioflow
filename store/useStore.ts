@@ -183,7 +183,38 @@ export const useStore = () => {
 
   // Sync state to LocalStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const saveToLocalStorage = (stateToSave: AppState) => {
+      try {
+        // Sanitize state: remove large assets that should not be in localStorage
+        const sanitizedLogs = stateToSave.logs.map(log => ({
+          ...log,
+          audio_base64: null // Never store large audio in localStorage
+        }));
+
+        const sanitizedState = {
+          ...stateToSave,
+          logs: sanitizedLogs
+        };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedState));
+      } catch (error) {
+        console.error("Failed to save state to localStorage (Quota likely exceeded):", error);
+        // If quota exceeded, we could try further reduction (e.g. only last 10 logs)
+        try {
+           const verySanitizedLogs = stateToSave.logs.slice(0, 10).map(log => ({
+             ...log,
+             audio_base64: null,
+             raw_transcript: log.raw_transcript?.length > 1000 ? log.raw_transcript.substring(0, 1000) + '...' : log.raw_transcript
+           }));
+           const verySanitizedState = { ...stateToSave, logs: verySanitizedLogs };
+           localStorage.setItem(STORAGE_KEY, JSON.stringify(verySanitizedState));
+        } catch (innerError) {
+           console.error("Even minimal state failed to save:", innerError);
+        }
+      }
+    };
+
+    saveToLocalStorage(state);
   }, [state]);
 
   // Load from Firestore when user is authenticated
