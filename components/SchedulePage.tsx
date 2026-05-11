@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
 import { AppState, ScheduleItem, ScheduleType, Project } from '../types';
+import Calendar from './Calendar';
 
 interface SchedulePageProps {
   state: AppState;
@@ -10,6 +11,8 @@ interface SchedulePageProps {
   onToggleReminder: (id: string) => void;
   initialSelectedDate?: string | null;
   initialFocusedItemId?: string | null;
+  autoOpenAddForm?: boolean;
+  onFormOpened?: () => void;
 }
 
 export interface SchedulePageRef {
@@ -58,11 +61,9 @@ const SwipeableEventCard: React.FC<{
   const onTouchEnd = (e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - startX;
     
-    // If it's a very small movement, treat it as a tap for expansion
+    // If it's a very small movement, skip swipe logic
     if (Math.abs(deltaX) < 5) {
-      setIsExpanded(!isExpanded);
       setCurrentX(0);
-      setIsOpen(false);
       return;
     }
 
@@ -72,6 +73,19 @@ const SwipeableEventCard: React.FC<{
     } else {
       setCurrentX(0);
       setIsOpen(false);
+    }
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // If user clicked a button inside, let it handle it
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+
+    if (isOpen) {
+      close();
+    } else {
+      setIsExpanded(!isExpanded);
     }
   };
 
@@ -138,9 +152,9 @@ const SwipeableEventCard: React.FC<{
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        onClick={isOpen ? close : undefined}
+        onClick={handleCardClick}
         style={{ transform: `translateX(${currentX}px)` }}
-        className={`relative z-10 bg-[#1a1715] border border-stone-800/40 p-6 rounded-[2.5rem] shadow-xl transition-all duration-300 ease-out flex flex-col ${isProfileMilestone ? 'border-l-4 border-l-emerald-600/50' : ''} ${isInitiallyExpanded ? 'ring-2 ring-orange-600 ring-offset-4 ring-offset-[#0f0d0c]' : ''}`}
+        className={`relative z-10 bg-[#1a1715] border border-stone-800/40 p-6 rounded-[2.5rem] shadow-xl transition-all duration-300 ease-out flex flex-col cursor-pointer ${isProfileMilestone ? 'border-l-4 border-l-emerald-600/50' : ''} ${isInitiallyExpanded ? 'ring-2 ring-orange-600 ring-offset-4 ring-offset-[#0f0d0c]' : ''}`}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
@@ -188,6 +202,40 @@ const SwipeableEventCard: React.FC<{
                  </div>
                )}
             </div>
+
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center space-x-3 pt-6 border-t border-stone-800/40 mt-2">
+              {!isProfileMilestone && (
+                <>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                    className="flex-1 flex items-center justify-center space-x-2 py-3 bg-stone-900/60 hover:bg-stone-800 rounded-2xl border border-stone-800/40 text-stone-300 transition-all text-[9px] font-black uppercase tracking-widest group/btn"
+                  >
+                    <svg className="w-3.5 h-3.5 text-stone-600 group-hover/btn:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    <span>Edit</span>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleReminder(item.id); }}
+                    className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-2xl border transition-all text-[9px] font-black uppercase tracking-widest ${item.reminder_set ? 'bg-orange-950/40 border-orange-900/40 text-orange-500' : 'bg-stone-900/60 border-stone-800/40 text-stone-500 hover:bg-stone-800'}`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22a2.98 2.98 0 002.822-2H9.178a2.98 2.98 0 002.822 2zm7.758-6.11l-1.171-1.171a4.992 4.992 0 01-1.587-3.568V11a5 5 0 00-4-4.9V5a1 1 0 00-2 0v1.1a5 5 0 00-4 4.9v.151c0 1.326-.527 2.598-1.465 3.535l-1.171 1.171A1 1 0 005 17h14a1 1 0 00.758-1.11z" /></svg>
+                    <span>{item.reminder_set ? 'Alert On' : 'Remind'}</span>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+                    className="flex-1 flex items-center justify-center space-x-2 py-3 bg-rose-950/20 hover:bg-rose-900/30 rounded-2xl border border-rose-900/20 text-rose-500 transition-all text-[9px] font-black uppercase tracking-widest"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
+              {isProfileMilestone && (
+                <div className="w-full text-center py-2 text-stone-600 text-[8px] font-black uppercase tracking-widest italic">
+                  Managed via Artist Profile
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -201,11 +249,22 @@ const SwipeableEventCard: React.FC<{
   );
 };
 
-const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, onAddItem, onUpdateItem, onRemoveItem, onToggleReminder, initialSelectedDate, initialFocusedItemId }, ref) => {
+const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ 
+  state, 
+  onAddItem, 
+  onUpdateItem, 
+  onRemoveItem, 
+  onToggleReminder, 
+  initialSelectedDate, 
+  initialFocusedItemId,
+  autoOpenAddForm,
+  onFormOpened
+}, ref) => {
   const [showForm, setShowForm] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(initialSelectedDate || new Date().toISOString().split('T')[0]);
+  const [selectedRange, setSelectedRange] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -222,6 +281,14 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
       setCurrentCalendarDate(new Date(initialSelectedDate));
     }
   }, [initialSelectedDate]);
+
+  useEffect(() => {
+    if (autoOpenAddForm) {
+      resetForm(selectedDate || undefined);
+      setShowForm(true);
+      onFormOpened?.();
+    }
+  }, [autoOpenAddForm, selectedDate, onFormOpened]);
 
   useImperativeHandle(ref, () => ({
     openAddForm: () => {
@@ -309,29 +376,22 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
     }, {} as Record<string, ScheduleItem[]>);
   }, [mergedSchedule]);
 
-  const calendarDays = useMemo(() => {
-    const year = currentCalendarDate.getFullYear();
-    const month = currentCalendarDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    const days = [];
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      days.push(null);
+  const handleDateSelect = (dateStr: string, isShift?: boolean) => {
+    if (isShift && selectedDate) {
+      const start = new Date(selectedDate < dateStr ? selectedDate : dateStr);
+      const end = new Date(selectedDate < dateStr ? dateStr : selectedDate);
+      const range = [];
+      const current = new Date(start);
+      while (current <= end) {
+        range.push(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+      setSelectedRange(range);
+    } else {
+      setSelectedDate(dateStr);
+      setSelectedRange([]);
     }
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      const date = new Date(year, month, i);
-      const dateStr = date.toISOString().split('T')[0];
-      days.push({
-        day: i,
-        dateStr,
-        hasEvents: !!groupedSchedule[dateStr],
-        isToday: dateStr === new Date().toISOString().split('T')[0],
-        isSelected: dateStr === selectedDate
-      });
-    }
-    return days;
-  }, [currentCalendarDate, groupedSchedule, selectedDate]);
+  };
 
   const changeMonth = (offset: number) => {
     const newDate = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + offset, 1);
@@ -341,52 +401,35 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
   const inputClasses = "w-full bg-[#1a1715] border border-stone-800/60 rounded-2xl px-5 py-4 text-stone-100 placeholder:text-stone-700 focus:border-orange-900 outline-none transition-all font-medium text-sm";
   const labelClasses = "block text-stone-600 text-[10px] font-black uppercase tracking-[0.2em] mb-2 ml-1";
 
-  const selectedEvents = selectedDate ? groupedSchedule[selectedDate] || [] : [];
+  const selectedEvents = useMemo(() => {
+    if (selectedRange.length > 0) {
+      return selectedRange.flatMap(date => groupedSchedule[date] || []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+    return selectedDate ? groupedSchedule[selectedDate] || [] : [];
+  }, [selectedDate, selectedRange, groupedSchedule]);
+
+  const displayDateLabel = useMemo(() => {
+    if (selectedRange.length > 0) {
+      const start = new Date(selectedRange[0]);
+      const end = new Date(selectedRange[selectedRange.length - 1]);
+      return `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    }
+    return selectedDate ? getDayLabel(selectedDate) : '';
+  }, [selectedDate, selectedRange]);
 
   return (
     <div className="pt-2 pb-32 animate-in fade-in duration-500 relative">
       <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
         {/* LEFT COLUMN: Calendar */}
         <div className="lg:sticky lg:top-4">
-          <section className="bg-[#1a1715] rounded-[2.5rem] border border-stone-800/40 p-6 mb-12 lg:mb-0 shadow-2xl">
-            <div className="flex justify-between items-center mb-6 px-2">
-              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-stone-100">
-                {currentCalendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-              </h3>
-              <div className="flex space-x-2">
-                <button onClick={() => changeMonth(-1)} className="p-2 text-stone-500 hover:text-stone-100">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <button onClick={() => changeMonth(1)} className="p-2 text-stone-500 hover:text-stone-100">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 gap-2">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                <div key={`${day}-${i}`} className="text-center text-[8px] font-black text-stone-600 uppercase tracking-widest py-1">{day}</div>
-              ))}
-              {calendarDays.map((d, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => d && setSelectedDate(d.dateStr)}
-                  className="aspect-square flex flex-col items-center justify-center relative active:scale-90 transition-transform"
-                >
-                  {d && (
-                    <>
-                      <div className={`w-full h-full flex items-center justify-center rounded-xl text-[10px] font-bold transition-all ${d.isSelected ? 'bg-orange-800 text-stone-100 shadow-lg scale-105' : d.isToday ? 'border border-orange-700 text-orange-500' : 'text-stone-400'}`}>
-                        {d.day}
-                      </div>
-                      {d.hasEvents && (
-                        <div className={`absolute bottom-1.5 w-1 h-1 rounded-full ${d.isSelected ? 'bg-stone-100' : 'bg-orange-500'}`}></div>
-                      )}
-                    </>
-                  )}
-                </button>
-              ))}
-            </div>
-          </section>
+          <Calendar 
+            currentCalendarDate={currentCalendarDate}
+            onMonthChange={changeMonth}
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            groupedSchedule={groupedSchedule}
+            selectedRange={selectedRange}
+          />
         </div>
 
         {/* RIGHT COLUMN: Commitments List */}
@@ -395,7 +438,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({ state, on
             <div className="space-y-5">
               <div className="flex justify-between items-center px-2">
                 <h3 className="text-stone-100 text-[10px] font-black uppercase tracking-[0.3em]">
-                  {getDayLabel(selectedDate)}
+                  {displayDateLabel}
                 </h3>
                 <button 
                   onClick={() => {

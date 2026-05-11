@@ -21,6 +21,7 @@ interface DashboardProps {
   onAddProtocolLog?: (log: any) => void;
   onDeepDiveClick?: (log: WorkshopLog) => void;
   onAddTickets?: (count: number) => void;
+  onNewCommitmentClick?: (date?: string | null) => void;
 }
 
 /**
@@ -64,7 +65,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onRemoveBlockStrategy,
   onAddProtocolLog,
   onDeepDiveClick,
-  onAddTickets
+  onAddTickets,
+  onNewCommitmentClick
 }) => {
   const [isEnergyExpanded, setIsEnergyExpanded] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(state.energyHistory[0]?.level || 3);
@@ -804,7 +806,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="hidden lg:block lg:col-span-1 space-y-10 lg:mt-0">
           <div className="space-y-10">
              <div className="space-y-4">
-                <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em] px-1">Commitments Calendar</h2>
+                <div className="flex justify-between items-center px-1">
+                  <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Commitments Calendar</h2>
+                  <button 
+                    onClick={() => onNewCommitmentClick?.(dashboardSelectedDate)}
+                    className="text-stone-600 hover:text-orange-500 transition-colors active:scale-95 p-1"
+                    title="Add Commitment"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                </div>
                 <Calendar 
                     currentCalendarDate={currentCalendarDate} 
                     onMonthChange={changeMonth} 

@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [focusedScheduleItemId, setFocusedScheduleItemId] = useState<string | null>(null);
   const [activeProjectInView, setActiveProjectInView] = useState<string | null>(null);
   const [focusedLogId, setFocusedLogId] = useState<string | null>(null);
+  const [autoOpenScheduleForm, setAutoOpenScheduleForm] = useState(false);
 
   const schedulePageRef = useRef<{ openAddForm: () => void } | null>(null);
 
@@ -117,6 +118,11 @@ const App: React.FC = () => {
               onAddProtocolLog={addProtocolLog}
               onDeepDiveClick={handleDeepDiveClick}
               onAddTickets={addTickets}
+              onNewCommitmentClick={(date) => {
+                setFocusedScheduleDate(date || null);
+                setActiveTab('commitments');
+                setAutoOpenScheduleForm(true);
+              }}
             />
           )}
           
@@ -225,6 +231,8 @@ const App: React.FC = () => {
                 onToggleReminder={toggleReminder} 
                 initialSelectedDate={focusedScheduleDate}
                 initialFocusedItemId={focusedScheduleItemId}
+                autoOpenAddForm={autoOpenScheduleForm}
+                onFormOpened={() => setAutoOpenScheduleForm(false)}
               />
             </div>
           )}

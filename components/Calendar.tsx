@@ -6,8 +6,9 @@ interface CalendarProps {
   currentCalendarDate: Date;
   onMonthChange: (offset: number) => void;
   selectedDate: string | null;
-  onDateSelect: (date: string) => void;
+  onDateSelect: (date: string, isShift?: boolean) => void;
   groupedSchedule: Record<string, ScheduleItem[]>;
+  selectedRange?: string[];
 }
 
 const Calendar: React.FC<CalendarProps> = ({ 
@@ -15,7 +16,8 @@ const Calendar: React.FC<CalendarProps> = ({
   onMonthChange, 
   selectedDate, 
   onDateSelect,
-  groupedSchedule
+  groupedSchedule,
+  selectedRange = []
 }) => {
   const calendarDays = useMemo(() => {
     const year = currentCalendarDate.getFullYear();
@@ -30,16 +32,17 @@ const Calendar: React.FC<CalendarProps> = ({
     for (let i = 1; i <= lastDay.getDate(); i++) {
         const date = new Date(year, month, i);
         const dateStr = date.toISOString().split('T')[0];
+        const isSelected = dateStr === selectedDate || selectedRange.includes(dateStr);
         days.push({
             day: i,
             dateStr,
             hasEvents: !!groupedSchedule[dateStr],
             isToday: dateStr === new Date().toISOString().split('T')[0],
-            isSelected: dateStr === selectedDate
+            isSelected
         });
     }
     return days;
-  }, [currentCalendarDate, groupedSchedule, selectedDate]);
+  }, [currentCalendarDate, groupedSchedule, selectedDate, selectedRange]);
 
   return (
     <section className="bg-[#1a1715] rounded-[2.5rem] border border-stone-800/40 p-6 shadow-2xl">
@@ -64,7 +67,7 @@ const Calendar: React.FC<CalendarProps> = ({
         {calendarDays.map((d, i) => (
           <button 
             key={i} 
-            onClick={() => d && onDateSelect(d.dateStr)}
+            onClick={(e) => d && onDateSelect(d.dateStr, e.shiftKey)}
             className="aspect-square flex flex-col items-center justify-center relative active:scale-90 transition-transform"
           >
             {d && (
