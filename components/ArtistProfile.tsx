@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArtistProfile as ArtistProfileType, Project, WorkshopLog } from '../types';
 import { RainbowPicker } from './RainbowPicker';
+import { useStore } from '../store/useStore';
 
 interface ArtistProfileProps {
   profile: ArtistProfileType;
@@ -146,12 +148,31 @@ const CreativeDNA: React.FC<{
 };
 
 const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, onUpdate, onUnarchive }) => {
+  const { signOut, deleteAccount } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [activeColorTab, setActiveColorTab] = useState<'discipline' | 'style'>('discipline');
   const [localProfile, setLocalProfile] = useState(profile);
   const [expandedRippleId, setExpandedRippleId] = useState<string | null>(null);
   const [newThreadInput, setNewThreadInput] = useState('');
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+    } catch (error) {
+      console.error("Deletion failed:", error);
+      alert("Account deletion failed. You may need to log in again to perform this sensitive action.");
+    }
+  };
 
   const handleImageClick = () => {
     if (isEditing) fileInputRef.current?.click();
@@ -697,10 +718,53 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
         </section>
 
         {!isEditing && (
-           <div className="pt-8 text-center pb-12 opacity-40">
-             <button className="text-[10px] font-black uppercase text-stone-700 hover:text-stone-500 tracking-[0.3em] transition-colors pb-1 border-b border-stone-800/40">
-               Studio Switch / Sign Out
-             </button>
+           <div className="pt-8 space-y-4 pb-12">
+             <div className="text-center opacity-40">
+               <button 
+                 onClick={handleSignOut}
+                 className="text-[10px] font-black uppercase text-stone-700 hover:text-stone-500 tracking-[0.3em] transition-colors pb-1 border-b border-stone-800/40"
+               >
+                 Studio Switch / Sign Out
+               </button>
+             </div>
+             
+             {!showConfirmDelete ? (
+               <div className="text-center opacity-20">
+                 <button 
+                   onClick={() => setShowConfirmDelete(true)}
+                   className="text-[8px] font-black uppercase text-rose-900 hover:text-rose-500 tracking-[0.3em] transition-colors"
+                 >
+                   Clear Workshop Presence
+                 </button>
+               </div>
+             ) : (
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.95 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 className="bg-rose-950/10 border border-rose-900/20 rounded-[2.5rem] p-8 space-y-6 max-w-sm mx-auto"
+               >
+                 <div className="space-y-2">
+                   <h4 className="text-rose-500 font-black uppercase tracking-widest text-[10px]">Permanent Exit</h4>
+                   <p className="text-stone-500 text-[10px] leading-relaxed">
+                     This will permanently delete your creative profile, all projects, and logs. This action cannot be reversed.
+                   </p>
+                 </div>
+                 <div className="flex space-x-3">
+                   <button 
+                     onClick={() => setShowConfirmDelete(false)}
+                     className="flex-1 py-3 bg-stone-900 text-stone-400 font-bold text-[10px] uppercase tracking-widest rounded-xl border border-stone-800"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={handleDeleteAccount}
+                     className="flex-1 py-3 bg-rose-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-xl border border-rose-800"
+                   >
+                     Delete All
+                   </button>
+                 </div>
+               </motion.div>
+             )}
            </div>
         )}
       </div>

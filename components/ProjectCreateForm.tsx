@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Project, ProjectStatus, ProjectPhase } from '../types';
 import { refineNarrativeFromAudio } from '../services/gemini';
 import { RainbowPicker } from './RainbowPicker';
+import { useStore } from '../store/useStore';
 
 const PRESET_COLORS = [
   '#ea580c', // orange-600
@@ -32,6 +33,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
   title = "New Project",
   isInline = false
 }) => {
+  const { addRecording } = useStore();
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Active');
@@ -73,12 +75,21 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
       mediaRecorder.onstop = async () => {
         setIsProcessing(true);
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const durationSeconds = recordingTime;
         
         try {
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
             const base64Audio = (reader.result as string).split(',')[1];
+            
+            // Save recording to Firestore explicitly
+            await addRecording({
+              audio_base64: base64Audio,
+              duration_seconds: durationSeconds,
+              related_project_id: initialData?.id
+            });
+
             const refinedNarrative = await refineNarrativeFromAudio(base64Audio, 'audio/webm', description);
             setDescription(refinedNarrative);
             setIsProcessing(false);

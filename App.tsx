@@ -11,11 +11,12 @@ import FlowSession from './components/FlowSession';
 import ProjectLedger from './components/ProjectLedger';
 import Vault from './components/Vault';
 import SchedulePage from './components/SchedulePage';
+import Auth from './components/Auth';
 import { useStore } from './store/useStore';
 import { WorkshopLog, LogType, Project, ProjectStatus, ScheduleItem, ProjectPhase } from './types';
 
 const App: React.FC = () => {
-  const { state, addLog, updateLog, addProject, updateProject, updateProjectPhases, toggleProjectLock, archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, updateScheduleItem, removeScheduleItem, toggleReminder, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProtocolLog, reorderProjects, consumeTickets, addTickets } = useStore();
+  const { state, addLog, updateLog, addProject, updateProject, updateProjectPhases, toggleProjectLock, archiveProject, unarchiveProject, deleteProject, updateProfile, addScheduleItem, updateScheduleItem, removeScheduleItem, toggleReminder, addEnergyCheckIn, addBlockStrategy, updateBlockStrategy, removeBlockStrategy, addProtocolLog, reorderProjects, consumeTickets, addTickets, currentUser, isAuthLoading } = useStore();
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'commitments' | 'flow' | 'artist'>('home');
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -92,6 +93,19 @@ const App: React.FC = () => {
   const latestEnergyLevel = state.energyHistory[0]?.level;
 
   const currentActiveProject = activeProjects.find(p => p.id === activeProjectInView);
+
+  if (isAuthLoading) {
+    return (
+      <div className="bg-[#0f0d0c] min-h-screen flex flex-col items-center justify-center p-8">
+        <div className="w-12 h-12 border-2 border-orange-950/20 border-t-orange-600 rounded-full animate-spin"></div>
+        <p className="mt-6 text-stone-600 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Initializing Workshop</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Auth />;
+  }
 
   return (
     <div className="bg-[#0f0d0c] min-h-screen text-stone-100 selection:bg-orange-900/40">

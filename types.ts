@@ -35,6 +35,7 @@ export interface WorkshopLog {
   next_steps?: string | null;
   raw_transcript: string;
   audio_base64?: string | null; // For downloading voice memos
+  audio_recording_id?: string | null;
 }
 
 export interface ProjectInsight {
@@ -87,6 +88,7 @@ export interface Project {
   category: string;
   status: ProjectStatus;
   created_at: string;
+  updated_at?: string;
   is_archived: boolean;
   total_minutes: number;
   tools_and_materials: string[];
