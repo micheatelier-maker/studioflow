@@ -11,14 +11,72 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogClick, hideNav = false }) => {
   return (
-    <div className="flex flex-col relative bg-[#0f0d0c]">
-      <main className={`flex-1 px-5 safe-area-top ${hideNav ? '' : 'pb-32'}`}>
-        {children}
+    <div className="flex flex-col lg:flex-row relative bg-[#0f0d0c] min-h-screen">
+      {/* Desktop Side Nav */}
+      <nav className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-20 bg-[#14110f]/90 backdrop-blur-2xl border-r border-stone-800/50 flex-col items-center py-10 z-50 transition-transform duration-700 ease-in-out ${hideNav ? '-translate-x-full' : 'translate-x-0'}`}>
+        <div className="flex flex-col items-center space-y-10 flex-1 justify-center">
+          <button 
+            onClick={() => setActiveTab('home')}
+            className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === 'home' ? 'text-orange-400 bg-orange-400/10' : 'text-stone-600 hover:text-stone-400'}`}
+            title="Studio"
+          >
+            <HomeIcon className="w-6 h-6" />
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('projects')}
+            className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === 'projects' ? 'text-orange-400 bg-orange-400/10' : 'text-stone-600 hover:text-stone-400'}`}
+            title="Projects"
+          >
+            <FolderIcon className="w-6 h-6" />
+          </button>
+
+          <button 
+            onClick={onLogClick}
+            className="bg-orange-700 w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-950/50 active:scale-90 transition-all duration-300 border border-orange-600/40 hover:bg-orange-600"
+            title="Voice Log"
+          >
+            <MicIcon className="w-6 h-6 text-stone-100" />
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('commitments')}
+            className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === 'commitments' ? 'text-orange-400 bg-orange-400/10' : 'text-stone-600 hover:text-stone-400'}`}
+            title="Commitments"
+          >
+            <CalendarIcon className="w-6 h-6" />
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('flow')}
+            className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === 'flow' ? 'text-purple-500 bg-purple-500/10' : 'text-stone-600 hover:text-stone-400'}`}
+            title="Flow"
+          >
+            <BoltIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mt-auto">
+          <button 
+            onClick={() => setActiveTab('artist')}
+            className={`p-3 rounded-2xl transition-all duration-300 ${activeTab === 'artist' ? 'text-orange-400 bg-orange-400/10' : 'text-stone-600 hover:text-stone-400'}`}
+            title="Profile"
+          >
+            <UserIcon className="w-6 h-6" />
+          </button>
+        </div>
+      </nav>
+
+      <main className={`flex-1 safe-area-top lg:pl-20 ${hideNav ? '' : 'pb-32 lg:pb-0'}`}>
+        <div className="px-5 max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
 
-      {/* Bottom Nav Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 bg-[#14110f]/90 backdrop-blur-2xl border-t border-stone-800/50 safe-area-bottom z-50 transition-transform duration-700 ease-in-out ${hideNav ? 'translate-y-[150%]' : 'translate-y-0'}`}>
+      {/* Mobile Bottom Nav Bar */}
+      <div className={`fixed bottom-0 left-0 right-0 lg:hidden bg-[#14110f]/90 backdrop-blur-2xl border-t border-stone-800/50 safe-area-bottom z-50 transition-transform duration-700 ease-in-out ${hideNav ? 'translate-y-[150%]' : 'translate-y-0'}`}>
         <div className="flex justify-around items-center h-20 relative px-2">
+
           <button 
             onClick={() => setActiveTab('home')}
             className={`flex flex-col items-center justify-center transition-colors duration-300 w-[18%] ${activeTab === 'home' ? 'text-orange-400' : 'text-stone-600'}`}
@@ -96,6 +154,12 @@ const MicIcon = ({ className }: { className?: string }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v1a7 7 0 0 1-14 0v-1" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v4" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M8 22h8" />
+  </svg>
+);
+
+const UserIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 

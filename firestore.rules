@@ -1,105 +1,35 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // 0. Global Safety Net
+  
+    // 0. Global Safety Net - Default Deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // --- Entity Validation Helpers ---
-
-    function isValidProfile(data) {
-      return data.stageName is string && data.stageName.size() <= 100
-        && data.discipline is string && data.discipline.size() <= 100
-        && data.style is string && data.style.size() <= 100
-        && data.isOnboarded is bool;
-    }
-
-    function isValidProject(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
-        && data.status in ['Active', 'Exploring', 'Stalled', 'Paused', 'Complete']
-        && data.color is string && data.color.size() <= 20;
-    }
-
-    function isValidSession(data) {
-      return data.type in ['session', 'idea', 'brainstorm', 'problem', 'post']
-        && data.project_id is string && data.project_id.size() <= 128
-        && data.date is string;
-    }
-
-    function isValidRecording(data) {
-      return data.date is string
-        && (data.audio_base64 is string || data.audio_base64 == null)
-        && (data.related_project_id is string || data.related_project_id == null);
-    }
-
-    function isValidCalendarEvent(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() <= 300
-        && data.date is string
-        && data.type in ['deadline', 'session', 'event', 'milestone'];
-    }
-
     // --- Path Matching ---
+    
+    // Connection test
+    match /test/connection {
+      allow read: if true;
+    }
 
+    // User data security - Flat structure for maximum reliability
     match /users/{userId} {
-      
-      // Profiles
-      match /profiles/{profileId} {
-        allow get: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(profileId) && isValidProfile(incoming());
-      }
+      allow read, write: if isOwner(userId);
+    }
 
-      // Projects
-      match /projects/{projectId} {
-        allow list, get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming());
-        allow update: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming())
-          && incoming().created_at == existing().created_at; // creation date immutable
-        allow delete: if isOwner(userId);
-      }
-
-      // Sessions
-      match /sessions/{sessionId} {
-        allow list, get: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(sessionId) && isValidSession(incoming());
-        allow delete: if isOwner(userId);
-      }
-
-      // Recordings
-      match /recordings/{recordingId} {
-        allow list, get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(recordingId) && isValidRecording(incoming());
-        allow delete: if isOwner(userId);
-      }
-
-      // CalendarEvents
-      match /calendarEvents/{eventId} {
-        allow list, get: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(eventId) && isValidCalendarEvent(incoming());
-        allow delete: if isOwner(userId);
-      }
+    match /users/{userId}/{allSegments=**} {
+      allow read, write: if isOwner(userId);
     }
   }
 }
