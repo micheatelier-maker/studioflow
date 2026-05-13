@@ -650,7 +650,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
         </div>
 
         {/* RIGHT COLUMN: Commitments List */}
-        <div className="space-y-12">
+        <div className="space-y-12 mt-12 lg:mt-0">
           {selectedDate && (
             <div className="space-y-5">
               <div className="flex justify-between items-center px-2">

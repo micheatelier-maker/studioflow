@@ -323,7 +323,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
         {/* Center Column: DNA & Tools */}
         <div className="lg:col-span-5 space-y-8">
           <section className="space-y-4">
-            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-14 lg:mt-0 transition-all duration-700">
+            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-4 lg:mt-0 transition-all duration-700">
               <CreativeDNA 
                   disciplineColor={isEditing ? localProfile.disciplineColor : profile.disciplineColor} 
                   styleColor={isEditing ? localProfile.styleColor : profile.styleColor}
