@@ -34,13 +34,41 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
   isInline = false
 }) => {
   const { addRecording } = useStore();
+  const getInitialPhases = (): ProjectPhase[] => {
+    if (initialData?.phases && initialData.phases.length > 0) return initialData.phases;
+    
+    const now = new Date();
+    return [
+      'Ideation',
+      'Gathering supplies',
+      'Planning',
+      'Experimentation',
+      'Creation',
+      'Production',
+      'Completion'
+    ].map((title, index) => {
+      const startDate = new Date(now);
+      startDate.setDate(startDate.getDate() + (index * 14));
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 14);
+      
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        title,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        is_complete: false
+      };
+    });
+  };
+
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Active');
   const [category, setCategory] = useState(initialData?.category || '');
   const [tools, setTools] = useState<string[]>(initialData?.tools_and_materials || []);
   const [color, setColor] = useState(initialData?.color || PRESET_COLORS[0]);
-  const [phases, setPhases] = useState<ProjectPhase[]>(initialData?.phases || []);
+  const [phases, setPhases] = useState<ProjectPhase[]>(getInitialPhases());
   const [newTool, setNewTool] = useState('');
   
   const [isRecording, setIsRecording] = useState(false);

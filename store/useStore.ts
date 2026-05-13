@@ -409,10 +409,35 @@ export const useStore = () => {
   };
 
   const addProject = async (name: string, description: string, status: ProjectStatus, category: string, tools: string[], isArchived: boolean, color: string, phases?: ProjectPhase[], is_locked: boolean = false) => {
+    const now = new Date();
+    const defaultPhases: ProjectPhase[] = [
+      'Ideation',
+      'Gathering supplies',
+      'Planning',
+      'Experimentation',
+      'Creation',
+      'Production',
+      'Completion'
+    ].map((title, index) => {
+      const startDate = new Date(now);
+      startDate.setDate(startDate.getDate() + (index * 14));
+      
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 14);
+      
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        title,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        is_complete: false
+      };
+    });
+
     const newProject: Project = {
       id: Math.random().toString(36).substr(2, 9),
       name, description, category, status,
-      created_at: new Date().toISOString(),
+      created_at: now.toISOString(),
       is_archived: isArchived,
       is_locked,
       total_minutes: 0,
@@ -423,9 +448,7 @@ export const useStore = () => {
       unresolved_hurdles: [],
       mood_history: [],
       color: color || '#ea580c',
-      phases: phases && phases.length > 0 ? phases : [
-        { id: Math.random().toString(36).substr(2, 9), title: 'Establishment', startDate: new Date().toISOString().split('T')[0], endDate: null, is_complete: false }
-      ]
+      phases: phases && phases.length > 0 ? phases : defaultPhases
     };
 
     if (currentUser) {
