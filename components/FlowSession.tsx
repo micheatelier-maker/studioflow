@@ -30,6 +30,7 @@ const FlowSession: React.FC<FlowSessionProps> = ({
   const [seeds, setSeeds] = useState<{ id: string; text: string; time: number }[]>([]);
   const [isTimerRevealed, setIsTimerRevealed] = useState(false);
   const [sessionType, setSessionType] = useState<LogType>('session');
+  const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -197,9 +198,10 @@ const FlowSession: React.FC<FlowSessionProps> = ({
         }
       };
 
-      mediaRecorder.start(10000); 
+      mediaRecorder.start(5000); // 5s chunks for seeds
     } catch (err) {
       console.error("Audio capture failed", err);
+      alert("Microphone access is needed for the Studio Ear feature.");
       setIsMicEnabled(false);
     }
   };
@@ -262,15 +264,28 @@ const FlowSession: React.FC<FlowSessionProps> = ({
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          const result = await extractLogFromAudio(base64Audio, mimeType, sessionType);
-          onSessionComplete({
-            ...result,
-            project_id: selectedProjectId || result.project_id || '',
-            duration_minutes: targetDuration,
-            actual_duration_minutes: finalMinutes
-          });
-          setIsProcessing(false);
+          try {
+            const base64Audio = (reader.result as string).split(',')[1];
+            const result = await extractLogFromAudio(base64Audio, mimeType, sessionType);
+            onSessionComplete({
+              ...result,
+              project_id: selectedProjectId || result.project_id || '',
+              duration_minutes: targetDuration,
+              actual_duration_minutes: finalMinutes
+            });
+          } catch (err) {
+            console.error("Failed to process flow session", err);
+            onSessionComplete({
+              type: sessionType,
+              project_id: selectedProjectId,
+              duration_minutes: targetDuration,
+              actual_duration_minutes: finalMinutes,
+              date: new Date().toISOString(),
+              raw_transcript: '[Transcription Failed]'
+            } as any);
+          } finally {
+            setIsProcessing(false);
+          }
         };
       } else {
         onSessionComplete({
@@ -283,8 +298,9 @@ const FlowSession: React.FC<FlowSessionProps> = ({
         setIsProcessing(false);
       }
     } catch (err) {
-      console.error("Failed to process flow session", err);
+      console.error("Outer Failed to process flow session", err);
       setIsProcessing(false);
+      setIsFlowActive(false);
     }
   };
 
@@ -425,15 +441,23 @@ const FlowSession: React.FC<FlowSessionProps> = ({
           <button 
             onClick={() => {
               if (isMicEnabled && tickets <= 0) {
-                alert("Out of AI tickets. Upgrade to continue using Studio Ear.");
+                setError("Out of AI tickets. Upgrade to continue using Studio Ear.");
                 return;
               }
+              setError(null);
               setIsFlowActive(true);
             }}
             className="w-full bg-purple-800 py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] text-stone-100 border border-purple-700 shadow-2xl shadow-purple-950/50 active:scale-95 transition-all"
           >
             Enter Flow State
           </button>
+          
+          {error && (
+            <div className="mt-4 bg-rose-950/20 border border-rose-900/50 p-4 rounded-2xl flex items-start space-x-3 animate-in fade-in zoom-in-95 duration-300">
+               <svg className="w-5 h-5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+               <p className="text-rose-200 text-[10px] font-medium leading-relaxed uppercase tracking-wide">{error}</p>
+            </div>
+          )}
         </div>
       </div>
     );

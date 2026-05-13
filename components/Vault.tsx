@@ -109,7 +109,7 @@ const Vault: React.FC<VaultProps> = ({ projects, logs, onUnarchive, onDeleteFore
                       <div className="space-y-2">
                          <h5 className="text-[9px] font-black text-stone-500 uppercase tracking-widest">Kit Profile</h5>
                          <div className="flex flex-wrap gap-1.5">
-                            {project.tools_and_materials.map((t, i) => (
+                            {(Array.isArray(project.tools_and_materials) ? project.tools_and_materials : []).map((t, i) => (
                               <span key={i} className="bg-stone-900 border border-stone-800 text-stone-400 text-[8px] px-2 py-1 rounded-md font-bold uppercase">{t}</span>
                             ))}
                          </div>
@@ -117,8 +117,8 @@ const Vault: React.FC<VaultProps> = ({ projects, logs, onUnarchive, onDeleteFore
                       <div className="space-y-2">
                          <h5 className="text-[9px] font-black text-stone-500 uppercase tracking-widest">Breakthroughs</h5>
                          <div className="space-y-1">
-                            {project.milestones.slice(0, 2).map((m, i) => (
-                              <p key={i} className="text-stone-400 text-[10px]">• {m}</p>
+                            {(Array.isArray(project.milestones) ? project.milestones : []).slice(0, 2).map((m, i) => (
+                              <p key={i} className="text-stone-400 text-[10px]">• {typeof m === 'string' ? m : String(m)}</p>
                             ))}
                          </div>
                       </div>

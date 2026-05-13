@@ -166,18 +166,34 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            const result = await extractLogFromAudio(base64Audio, mimeType, type);
-            onComplete({ 
-              ...result, 
-              project_id: selectedProjectId || result.project_id || '',
-              actual_duration_minutes: finalMinutes,
-              audio_base64: base64Audio
-            });
+            try {
+              const base64Audio = (reader.result as string).split(',')[1];
+              const result = await extractLogFromAudio(base64Audio, mimeType, type);
+              onComplete({ 
+                ...result, 
+                project_id: selectedProjectId || result.project_id || '',
+                actual_duration_minutes: finalMinutes,
+                audio_base64: null // Discard as per user request
+              });
+            } catch (err) {
+              console.error("Gemini Extraction Error:", err);
+              setError("Studio Ear failed to transcribe. Saving manual fallback.");
+              onComplete({
+                type,
+                project_id: selectedProjectId === 'new' ? '' : selectedProjectId || '',
+                actual_duration_minutes: finalMinutes,
+                date: new Date().toISOString(),
+                raw_transcript: '[Transcription Failed]',
+                materials_used: []
+              });
+            } finally {
+              setIsProcessing(false);
+            }
           };
         } catch (err) {
           setError("Failed to process thoughts.");
           setIsProcessing(false);
+          onCancel();
         }
       };
       mediaRecorderRef.current.stop();
@@ -328,6 +344,13 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
             {isRecording ? getInstructions() : "Speak freely. No notes, just flow."}
           </p>
         </div>
+
+        {error && (
+          <div className="mx-8 bg-rose-950/20 border border-rose-900/50 p-4 rounded-2xl flex items-start space-x-3 animate-in fade-in zoom-in-95 duration-300">
+             <svg className="w-5 h-5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+             <p className="text-rose-200 text-xs font-medium leading-relaxed">{error}</p>
+          </div>
+        )}
 
         {/* Speech Bubbles for SessionLogger */}
         {isRecording && (

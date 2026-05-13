@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { HelpCircle, Calendar as CalendarIcon, Clock, ChevronRight, Heart } from 'lucide-react';
+import { HelpCircle, Calendar as CalendarIcon, Clock, ChevronRight, Heart, Mic } from 'lucide-react';
 import { AppState, Project, WorkshopLog, ScheduleItem, BlockStrategy } from '../types';
 import BlockRemoverSession from './BlockRemoverSession';
 import Calendar from './Calendar';
+import GanttChart from './GanttChart';
 import { DEEP_DIVE_QUESTIONS } from './LogForm';
 
 interface DashboardProps {
@@ -69,10 +70,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   onNewCommitmentClick
 }) => {
   const [isEnergyExpanded, setIsEnergyExpanded] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState(state.energyHistory[0]?.level || 3);
-  const [previousLevel, setPreviousLevel] = useState(selectedLevel);
+  const selectedLevel = state.energyHistory && state.energyHistory.length > 0 ? state.energyHistory[0].level : 3;
+  const [selectedLevelState, setSelectedLevel] = useState(selectedLevel);
+  const [previousLevel, setPreviousLevel] = useState(selectedLevelState);
   const [energyNote, setEnergyNote] = useState('');
   const [showCommitmentInfo, setShowCommitmentInfo] = useState(false);
+
+  useEffect(() => {
+    if (state.energyHistory && state.energyHistory.length > 0) {
+      setSelectedLevel(state.energyHistory[0].level);
+    }
+  }, [state.energyHistory]);
   
   // Strategy Form State
   const [isAddingStrategy, setIsAddingStrategy] = useState(false);
@@ -263,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const groupedSchedule = useMemo(() => {
-    const deadlines = Array.isArray(state.artistProfile.deadlines) ? state.artistProfile.deadlines : [];
+    const deadlines = (state.artistProfile && Array.isArray(state.artistProfile.deadlines)) ? state.artistProfile.deadlines : [];
     const profileMetaItems: ScheduleItem[] = deadlines.map(d => ({
       id: `prof-${d.id}`,
       title: d.title,
@@ -290,7 +298,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
       
       <div className="space-y-6">
-        {recentLogs.map((log, index) => (
+        {Array.isArray(recentLogs) && recentLogs.map((log, index) => (
           <div key={log.id} className="relative">
             {/* Connection line between cards */}
             {index < recentLogs.length - 1 && (
@@ -421,25 +429,37 @@ const Dashboard: React.FC<DashboardProps> = ({
          <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Prime Thread</h2>
          <span className="text-orange-600 text-[8px] font-black uppercase tracking-widest">Focus Target</span>
        </div>
-       <button 
-         onClick={() => onNewLogFromProject(primeThread)}
-         className="w-full bg-[#1a1715] border border-orange-900/20 rounded-[3rem] p-10 handcrafted-shadow relative overflow-hidden group active:scale-[0.99] transition-all text-left"
-       >
-         <div className="relative z-10 space-y-5">
-           <span className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em] bg-orange-950/20 px-4 py-1.5 rounded-full border border-orange-900/20">
-             {primeThread.category}
-           </span>
-           <h3 className="text-stone-50 font-black text-4xl leading-none tracking-tight">
-             {primeThread.name}
-           </h3>
-           <div className="flex items-center space-x-3 pt-3">
-             <div className="bg-orange-800 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-             </div>
-             <span className="text-stone-400 text-[11px] font-black uppercase tracking-widest">Start another session</span>
+       <div className="bg-[#1a1715] border border-orange-900/20 rounded-[3rem] p-8 handcrafted-shadow space-y-6">
+         <div className="flex justify-between items-start">
+           <div className="space-y-1">
+             <span className="text-orange-500 text-[9px] font-black uppercase tracking-widest">{primeThread.category}</span>
+             <h3 className="text-stone-100 font-extrabold text-2xl leading-none">{primeThread.name}</h3>
            </div>
+           <button onClick={() => onNewLogFromProject(primeThread)} className="p-3 bg-orange-950/20 rounded-2xl border border-orange-900/20 text-orange-500 hover:bg-orange-800 hover:text-white transition-all">
+             <Clock className="w-5 h-5" />
+           </button>
          </div>
-      </button>
+         <div className="pt-2 border-t border-stone-800/20">
+           <div className="flex justify-between items-center mb-3">
+             <span className="text-[7px] font-black uppercase text-stone-600 tracking-[0.2em]">Arc Timeline</span>
+             <span className="text-[9px] font-black text-orange-600 tabular-nums">
+               {Math.round(((Array.isArray(primeThread.phases) ? primeThread.phases : []).filter(p => p.is_complete).length || 0) / (Math.max(1, (Array.isArray(primeThread.phases) ? primeThread.phases : []).length)) * 100)}%
+             </span>
+           </div>
+           <GanttChart 
+             phases={primeThread.phases || []} 
+             projectCreated={primeThread.created_at} 
+             projectColor={primeThread.color || '#ea580c'}
+             compact={true}
+           />
+         </div>
+         <button 
+           onClick={() => onNewLogFromProject(primeThread)}
+           className="w-full py-4 bg-orange-800/10 border border-orange-900/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-800 hover:text-white transition-all"
+         >
+           Start Session
+         </button>
+       </div>
     </section>
   );
 
@@ -464,7 +484,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
         
         <div className="space-y-3">
-          {commitments.map((item) => (
+          {Array.isArray(commitments) && commitments.map((item) => (
             <button 
               key={item.id} 
               onClick={() => onCommitmentClick(item)}
@@ -522,7 +542,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
       
       <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-3 pb-4 px-1 lg:grid lg:grid-cols-3 lg:gap-3 lg:pb-0">
-        {upcomingSchedule.map((item) => {
+        {Array.isArray(upcomingSchedule) && upcomingSchedule.map((item) => {
           const now = new Date();
           const commitmentDate = new Date(item.date);
           const diffTime = commitmentDate.getTime() - now.getTime();
@@ -679,6 +699,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                </button>
             </div>
           </div>
+          <button 
+            onClick={onLogClick}
+            aria-label="Studio Ear"
+            className="w-14 h-14 bg-orange-700 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-orange-950/50 border border-orange-600/40 active:scale-95 transition-all hover:bg-orange-600"
+          >
+            <Mic className="w-6 h-6" />
+          </button>
+          
           <button 
             onClick={onProfileClick}
             aria-label="View Artist Profile"
@@ -935,7 +963,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             
             {activeLabTab === 'protocols' ? (
               <div className="flex overflow-x-auto gap-6 pb-6 no-scrollbar snap-x snap-mandatory px-1">
-                {state.blockStrategies.map((s, i) => (
+                {(Array.isArray(state.blockStrategies) ? state.blockStrategies : []).map((s, i) => (
                   <div 
                     key={s.id} 
                     className="flex-shrink-0 w-[280px] sm:w-[320px] bg-[#1a1715]/40 border border-stone-800/40 rounded-[2.5rem] p-7 flex flex-col justify-between space-y-5 shadow-xl relative overflow-hidden transition-all duration-300 snap-center group hover:border-orange-900/30"
@@ -992,7 +1020,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <h4 className="text-[9px] text-stone-600 font-black uppercase tracking-widest px-1">Favourite Protocols</h4>
                   <div className="flex flex-col gap-2">
                     {state.blockStrategies.filter(s => s.is_favorite).length > 0 ? (
-                      state.blockStrategies.filter(s => s.is_favorite).map(s => (
+                      (Array.isArray(state.blockStrategies) ? state.blockStrategies.filter(s => s.is_favorite) : []).map(s => (
                         <div key={s.id} className="bg-orange-900/10 border border-orange-900/20 p-4 rounded-2xl flex justify-between items-center group hover:border-orange-900/40 transition-colors">
                           <div className="flex items-center space-x-3">
                             <div className="p-2 bg-orange-900/20 rounded-xl">
@@ -1021,7 +1049,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-3">
                   <h4 className="text-[9px] text-stone-600 font-black uppercase tracking-widest px-1">Recent Activity</h4>
                   <div className="space-y-2">
-                    {state.protocolLogs.slice(0, 10).map(log => (
+                    {(Array.isArray(state.protocolLogs) ? state.protocolLogs : []).slice(0, 10).map(log => (
                       <div key={log.id} className="bg-stone-900/40 border border-stone-800/40 p-4 rounded-2xl flex justify-between items-center">
                         <div>
                           <h4 className="text-stone-100 font-bold text-[11px]">{log.strategyName}</h4>

@@ -571,9 +571,10 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
 
   // Merge regular schedule with profile meta-milestones
   const mergedSchedule = useMemo(() => {
-    const profileMetaItems: ScheduleItem[] = state.artistProfile.deadlines.map(d => ({
+    const deadlines = (state.artistProfile?.deadlines && Array.isArray(state.artistProfile.deadlines)) ? state.artistProfile.deadlines : [];
+    const profileMetaItems: ScheduleItem[] = deadlines.map(d => ({
       id: `prof-${d.id}`,
-      title: d.title,
+      title: typeof d.title === 'string' ? d.title : String(d.title),
       date: d.date,
       type: 'milestone',
       reminder_set: false,
@@ -581,7 +582,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
     }));
 
     return [...state.schedule, ...profileMetaItems].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [state.schedule, state.artistProfile.deadlines]);
+  }, [state.schedule, state.artistProfile]);
   
   const groupedSchedule = useMemo(() => {
     return mergedSchedule.reduce((groups, item) => {

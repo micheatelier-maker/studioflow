@@ -151,6 +151,20 @@
         },
         "notes": { "type": "string" }
       }
+    },
+    "ProtocolLog": {
+      "title": "Protocol Log",
+      "description": "Logs of applied block-breaking strategies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "strategyId": { "type": "string" },
+        "strategyName": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "duration": { "type": "number" },
+        "reflection": { "type": "string" },
+        "reflectionType": { "type": "string", "enum": ["voice", "text"] }
+      }
     }
   },
   "firestore": {
@@ -173,6 +187,10 @@
     "/users/{userId}/calendarEvents/{eventId}": {
       "schema": "CalendarEvent",
       "description": "Commitments and calendar items"
+    },
+    "/users/{userId}/protocolLogs/{logId}": {
+      "schema": "ProtocolLog",
+      "description": "Applied protocol records"
     }
   }
 }

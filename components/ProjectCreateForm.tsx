@@ -40,12 +40,12 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
     const now = new Date();
     return [
       'Ideation',
-      'Gathering supplies',
-      'Planning',
-      'Experimentation',
-      'Creation',
-      'Production',
-      'Completion'
+      'gathering supplies',
+      'planning',
+      'experimentation',
+      'creation',
+      'production',
+      'completion'
     ].map((title, index) => {
       const startDate = new Date(now);
       startDate.setDate(startDate.getDate() + (index * 14));

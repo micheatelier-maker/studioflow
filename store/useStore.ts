@@ -351,11 +351,19 @@ export const useStore = () => {
       setState(prev => ({ ...prev, schedule: schedule }));
     }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/calendarEvents`));
 
+    // Protocols listener
+    const unsubProtocols = onSnapshot(collection(db, 'users', userId, 'protocolLogs'), (snap) => {
+      const protocolLogs: ProtocolLog[] = [];
+      snap.forEach(doc => protocolLogs.push(doc.data() as ProtocolLog));
+      setState(prev => ({ ...prev, protocolLogs }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/protocolLogs`));
+
     return () => {
       unsubProfile();
       unsubProjects();
       unsubSessions();
       unsubCalendar();
+      unsubProtocols();
     };
   }, [currentUser]);
 
@@ -412,12 +420,12 @@ export const useStore = () => {
     const now = new Date();
     const defaultPhases: ProjectPhase[] = [
       'Ideation',
-      'Gathering supplies',
-      'Planning',
-      'Experimentation',
-      'Creation',
-      'Production',
-      'Completion'
+      'gathering supplies',
+      'planning',
+      'experimentation',
+      'creation',
+      'production',
+      'completion'
     ].map((title, index) => {
       const startDate = new Date(now);
       startDate.setDate(startDate.getDate() + (index * 14));
@@ -518,7 +526,7 @@ export const useStore = () => {
   };
 
   const addLog = async (log: Omit<WorkshopLog, 'id'>) => {
-    const finalLog: WorkshopLog = { ...log, id: Math.random().toString(36).substr(2, 9) };
+    const finalLog: WorkshopLog = { ...log, id: Math.random().toString(36).substr(2, 9), audio_base64: null }; // Ensure audio is NEVER saved to sessions
     const duration = log.actual_duration_minutes || log.duration_minutes || 0;
     
     if (currentUser) {
@@ -526,25 +534,9 @@ export const useStore = () => {
       const sessionPath = `users/${userId}/sessions/${finalLog.id}`;
       
       try {
-        // If there's an audio recording, save it to the recordings collection separately
-        if (log.audio_base64) {
-          const recordingId = Math.random().toString(36).substr(2, 9);
-          const recordingData = sanitizeForFirestore({
-            id: recordingId,
-            date: new Date().toISOString(),
-            audio_base64: log.audio_base64,
-            duration_seconds: (log.actual_duration_minutes || 0) * 60,
-            transcript: log.raw_transcript,
-            related_project_id: log.project_id,
-            related_session_id: finalLog.id
-          });
-          
-          await setDoc(doc(db, 'users', userId, 'recordings', recordingId), recordingData);
-          finalLog.audio_recording_id = recordingId;
-          // Nullify the base64 in the session doc to save space/cost, as it's now in 'recordings'
-          finalLog.audio_base64 = null;
-        }
-
+        // Discarding audio_base64 as per user request: "do not save the audio file itself"
+        // We still keep the transcript and other metadata.
+        
         await setDoc(doc(db, 'users', userId, 'sessions', finalLog.id), sanitizeForFirestore(finalLog));
         
         const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', log.project_id));
@@ -753,11 +745,20 @@ export const useStore = () => {
 
   const addProtocolLog = async (log: Omit<ProtocolLog, 'id'>) => {
     const finalLog: ProtocolLog = { ...log, id: Math.random().toString(36).substr(2, 9) };
-    // Only store locally now
-    setState(prev => ({ 
-      ...prev, 
-      protocolLogs: [finalLog, ...prev.protocolLogs]
-    }));
+    
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/protocolLogs/${finalLog.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'protocolLogs', finalLog.id), sanitizeForFirestore(finalLog));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({ 
+        ...prev, 
+        protocolLogs: [finalLog, ...prev.protocolLogs]
+      }));
+    }
   };
 
   const addRecording = async (recording: { audio_base64: string, related_project_id?: string, duration_seconds?: number, transcript?: string }) => {

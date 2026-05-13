@@ -12,8 +12,10 @@ interface ProjectLedgerProps {
 const ProjectLedger: React.FC<ProjectLedgerProps> = ({ project, logs, onClose, initialFocusedLogId }) => {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(initialFocusedLogId || null);
   
+  if (!Array.isArray(logs)) return null;
+
   const projectLogs = [...logs]
-    .filter(l => l.project_id === project.id)
+    .filter(l => l && l.project_id === project.id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getTypeStyle = (type: LogType) => {
@@ -58,7 +60,9 @@ const ProjectLedger: React.FC<ProjectLedgerProps> = ({ project, logs, onClose, i
 
       <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 pb-20 no-scrollbar">
         <div className="mb-8 px-2">
-            <h3 className="text-stone-400 text-sm font-bold tracking-tight">{project.name} Project Arc</h3>
+            <h3 className="text-stone-400 text-sm font-bold tracking-tight">
+              {typeof project.name === 'string' ? project.name : 'Untitled'} Project Arc
+            </h3>
         </div>
 
         {projectLogs.length === 0 ? (

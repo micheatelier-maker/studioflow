@@ -17,164 +17,8 @@ interface ProjectCardProps {
  * Helper to generate tonal variations for phases based on base color and index.
  * Handles both Hex and HSL formats.
  */
-const getTonalVariation = (color: string, index: number, type: 'bg' | 'border' | 'text') => {
-  let h = 25, s = 70, l = 50; // Default orange-ish fallback
+import GanttChart from './GanttChart';
 
-  if (color.startsWith('hsl')) {
-    const matches = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
-    if (matches) {
-      h = parseInt(matches[1]);
-      s = parseInt(matches[2]);
-      l = parseInt(matches[3]);
-    }
-  } else if (color.startsWith('#')) {
-    // Simple hex to HSL approximation for common use cases
-    const r = parseInt(color.slice(1, 3), 16) / 255;
-    const g = parseInt(color.slice(3, 5), 16) / 255;
-    const b = parseInt(color.slice(5, 7), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    l = (max + min) / 2;
-    if (max === min) {
-      h = s = 0;
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h = Math.round(h * 60);
-      s = Math.round(s * 100);
-      l = Math.round(l * 100);
-    }
-  }
-
-  // Generate deterministic variations based on index
-  const lightnessAdj = (index * 7) % 25; 
-  const saturationAdj = (index * 4) % 15;
-  
-  const finalL = Math.max(15, Math.min(85, index % 2 === 0 ? l + lightnessAdj : l - lightnessAdj));
-  const finalS = Math.max(30, Math.min(100, s - saturationAdj));
-
-  if (type === 'bg') return `hsl(${h}, ${finalS}%, ${finalL}%, 0.22)`;
-  if (type === 'border') return `hsl(${h}, ${finalS}%, ${finalL}%, 0.6)`;
-  
-  // Ensure text contrast: If L is high, text should be dark version of color, else light.
-  const textL = finalL > 65 ? 25 : 95;
-  return `hsl(${h}, ${finalS}%, ${textL}%)`;
-};
-
-const GanttChart: React.FC<{ 
-  phases: ProjectPhase[]; 
-  projectCreated: string; 
-  projectColor: string; 
-  onTogglePhase: (id: string) => void 
-}> = ({ phases, projectCreated, projectColor, onTogglePhase }) => {
-  const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
-
-  const phasesArray = Array.isArray(phases) ? phases : [];
-  if (phasesArray.length === 0) return <p className="text-stone-600 text-xs italic ml-1">No phases established yet.</p>;
-
-  const startTimes = phasesArray.map(p => p.startDate ? new Date(p.startDate).getTime() : null).filter(Boolean) as number[];
-  const endTimes = phasesArray.map(p => p.endDate ? new Date(p.endDate).getTime() : null).filter(Boolean) as number[];
-
-  const anchorTime = new Date(projectCreated).getTime();
-  const minTime = startTimes.length > 0 ? Math.min(...startTimes) : anchorTime;
-  const maxTime = endTimes.length > 0 ? Math.max(...endTimes) : Math.max(minTime + (1000 * 60 * 60 * 24 * 30), Date.now());
-  
-  const totalSpan = Math.max(maxTime - minTime, 1);
-
-  const handleBarTap = (e: React.MouseEvent, phaseId: string) => {
-    e.stopPropagation();
-    setActivePhaseId(prev => prev === phaseId ? null : phaseId);
-  };
-
-  const formatDate = (dateStr: string | number | null) => {
-    if (!dateStr) return 'TBA';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'TBA';
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  return (
-    <div className="space-y-4 pt-2" onClick={() => setActivePhaseId(null)}>
-      <div className="relative w-full space-y-4">
-        {phasesArray.map((phase, index) => {
-          const phaseStart = phase.startDate ? new Date(phase.startDate).getTime() : minTime;
-          const phaseEnd = phase.endDate ? new Date(phase.endDate).getTime() : (phase.startDate ? phaseStart + (1000 * 60 * 60 * 24 * 7) : maxTime);
-          
-          const left = ((phaseStart - minTime) / totalSpan) * 100;
-          const width = ((phaseEnd - phaseStart) / totalSpan) * 100;
-
-          const bg = getTonalVariation(projectColor, index, 'bg');
-          const border = getTonalVariation(projectColor, index, 'border');
-          const text = getTonalVariation(projectColor, index, 'text');
-          const isBubbleOpen = activePhaseId === phase.id;
-
-          return (
-            <div key={phase.id} className="relative flex items-center">
-              <div className="flex-1 relative h-8">
-                <div 
-                  onClick={(e) => handleBarTap(e, phase.id)}
-                  className={`absolute h-full rounded-lg border flex items-center px-3 transition-all duration-500 cursor-pointer active:scale-[0.98] ${phase.is_complete ? 'opacity-40 grayscale' : ''} ${isBubbleOpen ? 'ring-2 ring-white/20' : ''}`}
-                  style={{ 
-                    left: `${Math.max(0, left)}%`, 
-                    width: `${Math.max(12, width)}%`,
-                    backgroundColor: bg,
-                    borderColor: border
-                  }}
-                >
-                  <span className={`text-[8px] font-black uppercase whitespace-nowrap ${phase.is_complete ? 'line-through' : ''}`} style={{ color: text }}>
-                    {phase.title}
-                  </span>
-                </div>
-
-                {/* Information Bubble (Below Phase) */}
-                {isBubbleOpen && (
-                  <div 
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-300 pointer-events-none"
-                    style={{ left: `${Math.max(6, left + width / 2)}%` }}
-                  >
-                    <div className="relative bg-stone-900 border border-stone-800 p-3 rounded-2xl shadow-2xl min-w-[140px]">
-                      {/* Bubble Arrow */}
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 border-t border-l border-stone-800 rotate-45"></div>
-                      
-                      <div className="space-y-1.5 relative z-10">
-                        <span className="block text-[7px] font-black uppercase text-stone-600 tracking-widest">Phase Detail</span>
-                        <p className="text-stone-100 text-[10px] font-bold leading-tight">{phase.title}</p>
-                        <div className="flex flex-col space-y-0.5 pt-1">
-                          <span className="text-[8px] text-stone-500 font-medium">Start: {formatDate(phase.startDate)}</span>
-                          <span className="text-[8px] text-stone-500 font-medium">End: {formatDate(phase.endDate)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onTogglePhase(phase.id); }}
-                className={`ml-4 w-6 h-6 rounded-md border flex items-center justify-center transition-all ${phase.is_complete ? 'bg-emerald-600 border-emerald-500 text-white' : 'border-stone-700 bg-stone-900 text-transparent hover:border-stone-500'}`}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </button>
-            </div>
-          );
-        })}
-        <div className="pt-2 flex justify-between items-center text-[7px] font-black text-stone-700 uppercase tracking-widest border-t border-stone-800/30">
-          <span>{formatDate(minTime)}</span>
-          <div className="h-1 w-1 rounded-full bg-stone-800"></div>
-          <span>{formatDate(maxTime)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ 
   project, 
@@ -251,6 +95,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const phases = Array.isArray(project.phases) ? project.phases : [];
     const updatedPhases = phases.map(p => 
       p.id === phaseId ? { ...p, is_complete: !p.is_complete } : p
+    );
+    onUpdatePhases(project.id, updatedPhases);
+  };
+
+  const handleUpdatePhase = (phaseId: string, updates: Partial<ProjectPhase>) => {
+    if (project.is_locked) return;
+    const phases = Array.isArray(project.phases) ? project.phases : [];
+    const updatedPhases = phases.map(p => 
+      p.id === phaseId ? { ...p, ...updates } : p
     );
     onUpdatePhases(project.id, updatedPhases);
   };
@@ -393,6 +246,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                  projectCreated={project.created_at} 
                  projectColor={project.color || '#ea580c'} 
                  onTogglePhase={handleTogglePhase}
+                 onUpdatePhase={handleUpdatePhase}
+                 isLocked={project.is_locked}
                />
             </div>
           </div>
@@ -407,10 +262,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                   <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest">Recent Activity</span>
                 </div>
                 <div className="space-y-4">
-                   {recentSessions.map((log) => {
+                   {Array.isArray(recentSessions) && recentSessions.map((log) => {
                      const isExpanded = expandedRippleId === log.id;
-                     const notableItemPreview = log.wins || log.challenges || log.summary || "Deep flow state";
-                     const mainTitle = log.summary || log.how_it_went || log.wins || "Studio Session";
+                     const notableItemPreview = String(log.wins || log.challenges || log.summary || "Deep flow state");
+                     const mainTitle = String(log.summary || log.how_it_went || log.wins || "Studio Session");
 
                      return (
                        <button 
@@ -420,7 +275,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                        >
                           <div className="space-y-1 w-full relative">
                              <span className="text-stone-600 text-[7px] font-black uppercase tracking-[0.3em] block mb-1">
-                               {project.name}
+                               {typeof project.name === 'string' ? project.name : String(project.name)}
                              </span>
                              
                              <div className="flex justify-between items-start">
@@ -477,7 +332,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             )}
 
             {/* Thread Commitments (Upcoming Commitments) */}
-            {projectSchedule.length > 0 && (
+            {Array.isArray(projectSchedule) && projectSchedule.length > 0 && (
               <div className="space-y-4">
                  <label className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">Thread Commitments</label>
                  <div className="space-y-2">
@@ -485,7 +340,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                       <div key={item.id} className="flex items-center justify-between bg-orange-950/10 p-4 rounded-2xl border border-orange-900/20">
                          <div className="flex items-center space-x-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-orange-600"></div>
-                            <span className="text-stone-200 text-xs font-bold">{item.title}</span>
+                            <span className="text-stone-200 text-xs font-bold">{typeof item.title === 'string' ? item.title : String(item.title)}</span>
                          </div>
                          <span className="text-[9px] font-black text-orange-700 uppercase tracking-widest">{new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                       </div>
@@ -500,7 +355,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               <div className="flex flex-wrap gap-2">
                 {(Array.isArray(project.tools_and_materials) ? project.tools_and_materials : []).map((tool, i) => (
                   <span key={i} className="bg-stone-900/60 text-stone-500 text-[9px] font-black px-3 py-1.5 rounded-lg border border-stone-800/60 uppercase tracking-tighter">
-                    {tool}
+                    {typeof tool === 'string' ? tool : String(tool)}
                   </span>
                 ))}
                 {(!Array.isArray(project.tools_and_materials) || project.tools_and_materials.length === 0) && <span className="text-stone-700 text-xs italic">No materials specified.</span>}

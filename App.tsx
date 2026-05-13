@@ -159,37 +159,78 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative mt-8">
-                 <Reorder.Group 
-                   axis="x" 
-                   values={activeProjects} 
-                   onReorder={reorderProjects}
-                   className="flex overflow-x-auto no-scrollbar space-x-2 px-1 pb-1"
-                 >
-                   {activeProjects.map((project) => (
-                     <Reorder.Item 
-                       key={project.id}
-                       value={project}
-                       className="relative"
+              <div className="relative mt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 lg:items-start">
+                 <div className="lg:sticky lg:top-10 space-y-4">
+                   <div className="lg:hidden">
+                     <Reorder.Group 
+                       axis="x" 
+                       values={activeProjects} 
+                       onReorder={reorderProjects}
+                       className="flex overflow-x-auto no-scrollbar space-x-2 px-1 pb-1"
                      >
-                       <button 
-                         onClick={() => setActiveProjectInView(project.id)}
-                         className={`relative px-6 py-4 rounded-t-[1.8rem] border-t border-l border-r transition-all duration-300 min-w-[120px] max-w-[160px] truncate font-black text-[10px] uppercase tracking-widest ${activeProjectInView === project.id ? 'bg-[#1a1715] border-stone-800/60 text-stone-100 z-10 -mb-[1px]' : 'bg-stone-900/30 border-stone-800/30 text-stone-600 hover:bg-stone-900/60'}`}
-                       >
-                         <span className="relative z-10">{project.name}</span>
-                         {activeProjectInView === project.id && (
-                           <motion.div 
-                             layoutId="activeTabUnderline"
-                             className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full z-20"
-                             style={{ backgroundColor: project.color }}
-                           />
-                         )}
-                       </button>
-                     </Reorder.Item>
-                   ))}
-                 </Reorder.Group>
+                       {activeProjects.map((project) => (
+                         <Reorder.Item 
+                           key={project.id}
+                           value={project}
+                           className="relative"
+                         >
+                           <button 
+                             onClick={() => setActiveProjectInView(project.id)}
+                             className={`relative px-6 py-4 rounded-t-[1.8rem] border-t border-l border-r transition-all duration-300 min-w-[120px] max-w-[160px] truncate font-black text-[10px] uppercase tracking-widest ${activeProjectInView === project.id ? 'bg-[#1a1715] border-stone-800/60 text-stone-100 z-10 -mb-[1px]' : 'bg-stone-900/30 border-stone-800/30 text-stone-600 hover:bg-stone-900/60'}`}
+                           >
+                             <span className="relative z-10">{project.name}</span>
+                             {activeProjectInView === project.id && (
+                               <motion.div 
+                                 layoutId="activeTabUnderline"
+                                 className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full z-20"
+                                 style={{ backgroundColor: project.color }}
+                               />
+                             )}
+                           </button>
+                         </Reorder.Item>
+                       ))}
+                     </Reorder.Group>
+                   </div>
 
-                 <div className="relative z-0">
+                   {/* Desktop Vertical Project Switcher */}
+                   <div className="hidden lg:block space-y-2">
+                     <Reorder.Group 
+                       axis="y" 
+                       values={activeProjects} 
+                       onReorder={reorderProjects}
+                       className="space-y-2"
+                     >
+                       {activeProjects.map((project) => (
+                         <Reorder.Item 
+                           key={project.id}
+                           value={project}
+                         >
+                           <button 
+                             onClick={() => setActiveProjectInView(project.id)}
+                             className={`w-full text-left px-6 py-4 rounded-2xl border transition-all duration-300 flex items-center justify-between group ${activeProjectInView === project.id ? 'bg-[#1a1715] border-stone-800/60 text-stone-100' : 'bg-stone-900/20 border-stone-900/10 text-stone-600 hover:bg-stone-900/40 hover:border-stone-800/40'}`}
+                           >
+                             <div className="flex items-center space-x-3 overflow-hidden">
+                               <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: project.color }}></div>
+                               <span className="font-black text-[10px] uppercase tracking-widest truncate">{project.name}</span>
+                             </div>
+                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-opacity ${activeProjectInView === project.id ? 'bg-orange-600 opacity-100' : 'bg-stone-800 opacity-0 group-hover:opacity-40'}`}></div>
+                           </button>
+                         </Reorder.Item>
+                       ))}
+                     </Reorder.Group>
+
+                     <div className="pt-4 px-2">
+                       <button 
+                         onClick={() => setShowProjectForm(true)}
+                         className="w-full py-4 border border-dashed border-stone-800 hover:border-orange-900/30 hover:bg-orange-900/5 rounded-2xl text-stone-700 hover:text-orange-500 transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                       >
+                         + New Arc
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="relative z-0 min-w-0">
                     {activeProjects.map(project => (
                       activeProjectInView === project.id && (
                         editingProject?.id === project.id ? (
