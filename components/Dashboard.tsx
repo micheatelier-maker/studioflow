@@ -263,7 +263,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const groupedSchedule = useMemo(() => {
-    const profileMetaItems: ScheduleItem[] = state.artistProfile.deadlines.map(d => ({
+    const deadlines = Array.isArray(state.artistProfile.deadlines) ? state.artistProfile.deadlines : [];
+    const profileMetaItems: ScheduleItem[] = deadlines.map(d => ({
       id: `prof-${d.id}`,
       title: d.title,
       date: d.date,

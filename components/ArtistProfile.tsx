@@ -15,6 +15,8 @@ interface ArtistProfileProps {
 const DISCIPLINES = [
   { group: "Visual Arts", options: ["Abstract Impressionism", "Neo-Surrealism", "Figurative Oil Painting", "Risograph Printmaking", "Street Muralist", "Conceptual Photography"] },
   { group: "Sonic Arts", options: ["Music Production", "Modular Synthesis", "Spatial Audio Design", "Foley & Sound Design", "Cyber-Folk Composition", "Experimental Ambient"] },
+  { group: "Healing & Wellness", options: ["Acupuncturist", "Holistic Nutritionist", "Reiki Practitioner", "Sound Healer", "Ayurvedic Consultant", "Somatic Therapist", "Transpersonal Guide"] },
+  { group: "Botanical & Nature", options: ["Botanist", "Ethnobotanist", "Floral Designer", "Permaculture Designer", "Horticulturalist", "Mycology Research", "Biophilic Designer"] },
   { group: "Craft & Material", options: ["Studio Ceramics", "Clay & Fabric Dolls", "Jewelry Design", "Kinetic Metalwork", "Woodworking & Joinery", "Glassblowing", "Bio-Material Research"] },
   { group: "Digital & Future", options: ["Generative AI Art", "Creative Coding", "VR World-building", "Voxel Architecture", "Interactive Installation", "3D Digital Sculpting"] },
   { group: "Textiles & Fashion", options: ["Sustainable Textile Design", "Structural Weaving", "Avant-Garde Tailoring", "Bio-Looming", "Experimental Dyeing"] },
@@ -197,26 +199,29 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
 
   const addProjectThread = () => {
     if (newThreadInput.trim()) {
+      const currentProjects = Array.isArray(localProfile.upcomingProjects) ? localProfile.upcomingProjects : [];
       setLocalProfile(prev => ({
         ...prev,
-        upcomingProjects: [...prev.upcomingProjects, newThreadInput.trim()]
+        upcomingProjects: [...currentProjects, newThreadInput.trim()]
       }));
       setNewThreadInput('');
     }
   };
 
   const removeProjectThread = (index: number) => {
+    const currentProjects = Array.isArray(localProfile.upcomingProjects) ? localProfile.upcomingProjects : [];
     setLocalProfile(prev => ({
       ...prev,
-      upcomingProjects: prev.upcomingProjects.filter((_, i) => i !== index)
+      upcomingProjects: currentProjects.filter((_, i) => i !== index)
     }));
   };
 
   const addMilestone = () => {
     const id = Math.random().toString(36).substr(2, 9);
+    const currentDeadlines = Array.isArray(localProfile.deadlines) ? localProfile.deadlines : [];
     setLocalProfile(prev => ({
       ...prev,
-      deadlines: [...prev.deadlines, { 
+      deadlines: [...currentDeadlines, { 
         id, 
         title: 'New Studio Goal', 
         date: new Date().toISOString().split('T')[0] 
@@ -225,16 +230,18 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
   };
 
   const removeMilestone = (id: string) => {
+    const currentDeadlines = Array.isArray(localProfile.deadlines) ? localProfile.deadlines : [];
     setLocalProfile(prev => ({
       ...prev,
-      deadlines: prev.deadlines.filter(item => item.id !== id)
+      deadlines: currentDeadlines.filter(item => item.id !== id)
     }));
   };
 
   const updateMilestone = (id: string, updates: Partial<{ title: string; date: string }>) => {
+    const currentDeadlines = Array.isArray(localProfile.deadlines) ? localProfile.deadlines : [];
     setLocalProfile(prev => ({
       ...prev,
-      deadlines: prev.deadlines.map(item => item.id === id ? { ...item, ...updates } : item)
+      deadlines: currentDeadlines.map(item => item.id === id ? { ...item, ...updates } : item)
     }));
   };
 
@@ -244,11 +251,11 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
   const loveTags = localProfile.loves.split(',').map(t => t.trim()).filter(Boolean);
   const inspirationTags = localProfile.inspirations.split(',').map(t => t.trim()).filter(Boolean);
   
-  const archivedProjects = projects.filter(p => p.is_archived);
-  const allTools = Array.from(new Set(projects.flatMap(p => p.tools_and_materials)));
+  const archivedProjects = (projects || []).filter(p => p.is_archived);
+  const allTools = Array.from(new Set((projects || []).flatMap(p => p.tools_and_materials || [])));
 
   const recentProfileLogs = useMemo(() => {
-    return [...logs]
+    return [...(logs || [])]
       .filter(l => l.type === 'session')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 3);
@@ -256,321 +263,162 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
 
   return (
     <div className="pt-8 pb-48 animate-in fade-in duration-1000">
-      {/* Hero Section */}
-      <section className="relative flex flex-col items-center pt-8 pb-0">
-        {/* Top-Right Edit Button - Icon Only */}
-        <button 
-          onClick={() => { setIsEditing(!isEditing); if (isEditing) handleSave(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className="absolute top-0 right-0 z-50 flex items-center justify-center bg-stone-900/40 border border-stone-800/60 rounded-full w-10 h-10 active:scale-95 transition-all text-stone-400 hover:text-stone-100"
-          aria-label={isEditing ? "Cancel editing" : "Edit profile"}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            {isEditing ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            )}
-          </svg>
-        </button>
-
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-orange-900/5 blur-[120px] rounded-full -z-10"></div>
-        
-        <div 
-          onClick={handleImageClick}
-          className={`group relative w-44 h-44 cursor-pointer transition-all duration-700 z-10 ${isEditing ? 'scale-105' : 'hover:scale-102'}`}
-        >
-          <div className="absolute -inset-2 rounded-[3.5rem] border border-orange-900/20 opacity-50"></div>
-          <div className={`absolute -inset-4 rounded-[4rem] border border-orange-900/10 opacity-30 ${isEditing ? 'animate-pulse' : ''}`}></div>
-          
-          <div className="w-full h-full rounded-[3.2rem] overflow-hidden border-2 border-stone-800 handcrafted-shadow bg-stone-900 relative">
-            {localProfile.profileImage ? (
-              <img src={localProfile.profileImage} alt="Artist" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-stone-700 bg-gradient-to-br from-stone-900 to-stone-950">
-                <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-            )}
-            
-            {isEditing && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
-                <div className="text-center">
-                  <svg className="w-6 h-6 text-orange-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  </svg>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-white">Change Photo</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-
-        <div className="mt-12 text-center space-y-2 w-full px-4 z-10">
-          {isEditing ? (
-            <div className="space-y-3 max-w-xs mx-auto">
-              <input 
-                value={localProfile.stageName}
-                onChange={(e) => setLocalProfile(p => ({ ...p, stageName: e.target.value }))}
-                className={inputClasses + " text-center text-2xl font-black tracking-tighter"}
-                placeholder="Stage Name"
-              />
-              <input 
-                value={localProfile.realName}
-                onChange={(e) => setLocalProfile(p => ({ ...p, realName: e.target.value }))}
-                className={inputClasses + " text-center text-xs uppercase tracking-widest text-stone-500"}
-                placeholder="Real Name"
-              />
-            </div>
-          ) : (
-            <>
-              <h2 className="text-5xl font-black tracking-tighter text-stone-100 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
-                {profile.stageName}<span className="text-orange-600">.</span>
-              </h2>
-              <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1 opacity-80 drop-shadow-md">
-                {profile.realName}
-              </p>
-            </>
-          )}
-        </div>
-      </section>
-
-      <div className="space-y-16 px-1">
-        {/* Creative DNA Section */}
-        <section className="space-y-6">
-          {/* Animation moved above heading and pulled up slightly */}
-          <div className="-mx-6 -mt-4 h-48 relative overflow-hidden opacity-80">
-            <CreativeDNA 
-                disciplineColor={isEditing ? localProfile.disciplineColor : profile.disciplineColor} 
-                styleColor={isEditing ? localProfile.styleColor : profile.styleColor}
-                disciplineText={isEditing ? localProfile.discipline : profile.discipline}
-                projects={projects}
-            />
-          </div>
-
-          {isEditing && (
-            <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 shadow-2xl space-y-6 animate-in slide-in-from-top duration-500">
-              <div className="flex p-1 bg-stone-900/60 rounded-2xl border border-stone-800/40">
-                <button 
-                  onClick={() => setActiveColorTab('discipline')}
-                  className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeColorTab === 'discipline' ? 'bg-stone-800 text-orange-500 shadow-lg' : 'text-stone-600'}`}
-                >
-                  Discipline Hue
-                </button>
-                <button 
-                  onClick={() => setActiveColorTab('style')}
-                  className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeColorTab === 'style' ? 'bg-stone-800 text-orange-500 shadow-lg' : 'text-stone-600'}`}
-                >
-                  Style Hue
-                </button>
-              </div>
-
-              <div className="pt-2">
-                {activeColorTab === 'discipline' ? (
-                  <RainbowPicker 
-                    label="Discipline Spectrum" 
-                    color={localProfile.disciplineColor} 
-                    onChange={(c) => setLocalProfile(p => ({ ...p, disciplineColor: c }))} 
-                  />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-16 px-1">
+        {/* Left Column: Identity */}
+        <div className="lg:col-span-3 space-y-8">
+          <section className="relative flex flex-col items-center pt-4 pb-0">
+            <button 
+              onClick={() => { setIsEditing(!isEditing); if (isEditing) handleSave(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="absolute top-0 right-0 z-50 flex items-center justify-center bg-stone-900/40 border border-stone-800/60 rounded-full w-10 h-10 active:scale-95 transition-all text-stone-400 hover:text-stone-100"
+              aria-label={isEditing ? "Cancel editing" : "Edit profile"}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                {isEditing ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 ) : (
-                  <RainbowPicker 
-                    label="Style Spectrum" 
-                    color={localProfile.styleColor} 
-                    onChange={(c) => setLocalProfile(p => ({ ...p, styleColor: c }))} 
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                )}
+              </svg>
+            </button>
+
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-orange-900/5 blur-[80px] rounded-full -z-10"></div>
+            
+            <div 
+              onClick={handleImageClick}
+              className={`group relative w-44 h-44 cursor-pointer transition-all duration-700 z-10 ${isEditing ? 'scale-105' : 'hover:scale-102'}`}
+            >
+              <div className="absolute -inset-2 rounded-[3.5rem] border border-orange-900/20 opacity-50"></div>
+              <div className={`absolute -inset-4 rounded-[4rem] border border-orange-900/10 opacity-30 ${isEditing ? 'animate-pulse' : ''}`}></div>
+              
+              <div className="w-full h-full rounded-[3.2rem] overflow-hidden border-2 border-stone-800 handcrafted-shadow bg-stone-900 relative">
+                {localProfile.profileImage ? (
+                  <img src={localProfile.profileImage} alt="Artist" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-stone-700 bg-stone-950">
+                    <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
                 )}
               </div>
             </div>
-          )}
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
-          <div className="flex items-center justify-between px-1 pt-2">
-            <h3 className="text-xl font-black tracking-tight text-stone-100 uppercase tracking-widest">Creative DNA</h3>
-            <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Core Aesthetic</span>
-          </div>
+            <div className="mt-8 text-center space-y-2 w-full z-10">
+              {isEditing ? (
+                <div className="space-y-3 w-full">
+                  <input value={localProfile.stageName} onChange={(e) => setLocalProfile(p => ({ ...p, stageName: e.target.value }))} className={inputClasses + " text-center text-xl font-black"} placeholder="Stage Name" />
+                  <input value={localProfile.realName} onChange={(e) => setLocalProfile(p => ({ ...p, realName: e.target.value }))} className={inputClasses + " text-center text-[10px] uppercase tracking-widest text-stone-500"} placeholder="Real Name" />
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-4xl font-black tracking-tighter text-stone-100">{profile.stageName}<span className="text-orange-600">.</span></h2>
+                  <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1">{profile.realName}</p>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
 
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 shadow-2xl space-y-3 group flex flex-col justify-center min-h-[140px]">
+        {/* Center Column: DNA & Tools */}
+        <div className="lg:col-span-5 space-y-12">
+          <section className="space-y-6">
+            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-2 lg:mt-0">
+              <CreativeDNA 
+                  disciplineColor={isEditing ? localProfile.disciplineColor : profile.disciplineColor} 
+                  styleColor={isEditing ? localProfile.styleColor : profile.styleColor}
+                  disciplineText={isEditing ? localProfile.discipline : profile.discipline}
+                  projects={projects}
+              />
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xl font-black tracking-tight text-stone-100 uppercase tracking-widest">Creative DNA</h3>
+              <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Core Aesthetic</span>
+            </div>
+
+            {isEditing && (
+              <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 shadow-2xl space-y-6">
+                <div className="flex p-1 bg-stone-900/60 rounded-2xl border border-stone-800/40">
+                  <button onClick={() => setActiveColorTab('discipline')} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeColorTab === 'discipline' ? 'bg-stone-800 text-orange-500' : 'text-stone-600'}`}>Discipline</button>
+                  <button onClick={() => setActiveColorTab('style')} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeColorTab === 'style' ? 'bg-stone-800 text-orange-500' : 'text-stone-600'}`}>Style</button>
+                </div>
+                <div className="pt-2">
+                  <RainbowPicker label={activeColorTab === 'discipline' ? "DisciplineSpectrum" : "Style Spectrum"} color={activeColorTab === 'discipline' ? localProfile.disciplineColor : localProfile.styleColor} onChange={(c) => setLocalProfile(p => activeColorTab === 'discipline' ? ({ ...p, disciplineColor: c }) : ({ ...p, styleColor: c }))} />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 space-y-3">
                 <div className="flex items-center space-x-2">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isEditing ? localProfile.disciplineColor : profile.disciplineColor }}></div>
                   <label className={labelClasses + " mb-0"}>Studio Discipline</label>
                 </div>
                 {isEditing ? (
-                  <div className="relative">
-                    <select 
-                      value={localProfile.discipline}
-                      onChange={(e) => setLocalProfile(p => ({ ...p, discipline: e.target.value }))}
-                      className={inputClasses + " appearance-none pr-10"}
-                    >
-                      <option value="" disabled>Select your craft...</option>
-                      {DISCIPLINES.map(group => (
-                        <optgroup key={group.group} label={group.group}>
-                          {group.options.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                      <option value="Other">Other Craft...</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-600">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-stone-100 font-bold text-2xl group-hover:text-orange-500 transition-colors leading-tight">
-                    {profile.discipline}
-                  </p>
-                )}
+                  <select value={localProfile.discipline} onChange={(e) => setLocalProfile(p => ({ ...p, discipline: e.target.value }))} className={inputClasses}>
+                    {DISCIPLINES.map(g => (<optgroup key={g.group} label={g.group}>{g.options.map(o => <option key={o} value={o}>{o}</option>)}</optgroup>))}
+                  </select>
+                ) : <p className="text-stone-100 font-bold text-2xl tracking-tight">{profile.discipline}</p>}
               </div>
 
-              <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 shadow-2xl space-y-3 group flex flex-col justify-center min-h-[140px]">
+              <div className="bg-[#1a1715] rounded-[2.5rem] p-6 border border-stone-800/50 space-y-3">
                 <div className="flex items-center space-x-2">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isEditing ? localProfile.styleColor : profile.styleColor }}></div>
                   <label className={labelClasses + " mb-0"}>Studio Style</label>
                 </div>
-                {isEditing ? (
-                  <textarea 
-                    value={localProfile.style}
-                    onChange={(e) => setLocalProfile(p => ({ ...p, style: e.target.value }))}
-                    className={inputClasses + " h-20 resize-none"}
-                  />
-                ) : (
-                  <p className="text-stone-300 text-lg leading-relaxed font-medium italic group-hover:text-stone-100 transition-colors">
-                    "{profile.style}"
-                  </p>
-                )}
+                {isEditing ? <textarea value={localProfile.style} onChange={(e) => setLocalProfile(p => ({ ...p, style: e.target.value }))} className={inputClasses + " h-20"} /> : <p className="text-stone-300 text-lg font-medium italic">"{profile.style}"</p>}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Resources & Tools Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-xl font-black tracking-tight text-stone-100 uppercase tracking-widest">Resources & Tools</h3>
-            <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Kit Archive</span>
-          </div>
-          <div className="bg-[#1a1715] rounded-[2.5rem] p-8 border border-stone-800/50 shadow-2xl space-y-6">
-             <div className="flex flex-wrap gap-2">
-                {allTools.map((tool, i) => (
-                  <span key={i} className="bg-stone-900 text-orange-500 text-[10px] font-black px-4 py-2.5 rounded-xl border border-orange-900/20 active:scale-95 transition-transform shadow-lg">
-                    {tool}
-                  </span>
-                ))}
-                {allTools.length === 0 && (
-                  <p className="text-stone-600 text-xs italic font-medium">Your kit is empty. Materials will appear here as you log them in projects.</p>
-                )}
-             </div>
-          </div>
-        </section>
+          <section className="space-y-6">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xl font-black tracking-tight text-stone-100 uppercase tracking-widest">Resources & Tools</h3>
+            </div>
+            <div className="bg-[#1a1715] rounded-[2.5rem] p-8 border border-stone-800/50 shadow-2xl">
+               <div className="flex flex-wrap gap-2">
+                  {allTools.map((tool, i) => <span key={i} className="bg-stone-900 text-orange-500 text-[10px] font-black px-4 py-2.5 rounded-xl border border-orange-900/20">{tool}</span>)}
+                  {allTools.length === 0 && <p className="text-stone-600 text-xs italic">Your kit is empty.</p>}
+               </div>
+            </div>
+          </section>
+        </div>
 
-        {/* Recent Studio Ripples (3 Max) */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between px-1">
+        {/* Right Column: Ripples & Interests */}
+        <div className="lg:col-span-4 space-y-12">
+
+          <section className="space-y-6">
             <h3 className="text-xl font-black tracking-tight text-stone-100 uppercase tracking-widest">Studio Ripples</h3>
-            <span className="text-[9px] font-black text-stone-600 uppercase tracking-widest">Recent Activity</span>
-          </div>
-          <div className="space-y-4">
-            {recentProfileLogs.length > 0 ? (
-              recentProfileLogs.map(log => {
-                const isExpanded = expandedRippleId === log.id;
-                return (
-                  <button 
-                    key={log.id} 
-                    onClick={() => setExpandedRippleId(isExpanded ? null : log.id)}
-                    className={`w-full bg-[#1a1715] rounded-[2rem] p-6 border transition-all duration-500 shadow-xl text-left flex flex-col group ${isExpanded ? 'border-orange-900/30' : 'border-stone-800/50 hover:border-orange-900/30'}`}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest">{log.project_name}</span>
-                          <span className="text-stone-600 text-[9px] font-bold uppercase tracking-widest">• {new Date(log.date).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-stone-100 font-bold text-base tracking-tight leading-tight line-clamp-1">
-                          {log.wins || log.summary || "Deep flow session"}
-                        </p>
-                      </div>
-                      <div className="bg-stone-900/80 px-3 py-1.5 rounded-xl border border-stone-800 text-[9px] font-black text-stone-400 tabular-nums">
-                        {log.actual_duration_minutes || log.duration_minutes}m
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              {recentProfileLogs.length > 0 ? recentProfileLogs.map(log => (
+                <button key={log.id} onClick={() => setExpandedRippleId(expandedRippleId === log.id ? null : log.id)} className="w-full bg-[#1a1715] rounded-[2rem] p-6 border border-stone-800/50 text-left transition-all">
+                  <div className="space-y-1">
+                    <span className="text-orange-500 text-[10px] font-black uppercase">{log.project_name}</span>
+                    <p className="text-stone-100 font-bold text-base leading-tight">{log.wins || log.summary || "Session"}</p>
+                  </div>
+                  {expandedRippleId === log.id && <div className="mt-4 pt-4 border-t border-stone-800/40 text-stone-400 text-xs italic">{log.how_it_went}</div>}
+                </button>
+              )) : <div className="bg-stone-900/10 border-2 border-dashed border-stone-800/40 rounded-[2rem] p-8 text-center text-stone-600 italic text-xs">No activity yet.</div>}
+            </div>
+          </section>
 
-                    {isExpanded && (
-                      <div className="mt-5 pt-5 border-t border-stone-800/40 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                        {log.how_it_went && (
-                          <div>
-                            <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1">Summary</span>
-                            <p className="text-stone-400 text-xs leading-relaxed italic">{log.how_it_went}</p>
-                          </div>
-                        )}
-                        {log.wins && (
-                          <div>
-                            <span className="text-[8px] font-black uppercase text-orange-600 tracking-widest block mb-1">Highlights</span>
-                            <p className="text-stone-200 text-xs leading-relaxed font-bold">{log.wins}</p>
-                          </div>
-                        )}
-                        {log.challenges && (
-                          <div>
-                            <span className="text-[8px] font-black uppercase text-rose-600 tracking-widest block mb-1">Challenges</span>
-                            <p className="text-stone-400 text-xs leading-relaxed">{log.challenges}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="bg-stone-900/10 border-2 border-dashed border-stone-800/40 rounded-[2rem] p-8 text-center">
-                <p className="text-stone-600 text-sm font-medium italic">No studio ripples yet.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Interests & Influences */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.3em] px-1">Current Obsessions</h3>
-            {isEditing ? (
-              <textarea 
-                value={localProfile.loves}
-                onChange={(e) => setLocalProfile(p => ({ ...p, loves: e.target.value }))}
-                className={inputClasses + " h-32 resize-none"}
-                placeholder="Comma separated loves..."
-              />
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {loveTags.map((tag, i) => (
-                  <span key={i} className="bg-orange-950/20 text-orange-400 text-[10px] font-black px-4 py-2 rounded-xl border border-orange-900/20 active:scale-95 transition-transform">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.3em] px-1">Deep Influences</h3>
-            {isEditing ? (
-              <textarea 
-                value={localProfile.inspirations}
-                onChange={(e) => setLocalProfile(p => ({ ...p, inspirations: e.target.value }))}
-                className={inputClasses + " h-32 resize-none"}
-                placeholder="Comma separated inspirations..."
-              />
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {inspirationTags.map((tag, i) => (
-                  <span key={i} className="bg-indigo-950/20 text-indigo-400 text-[10px] font-black px-4 py-2 rounded-xl border border-indigo-900/20 active:scale-95 transition-transform">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+          <section className="space-y-12">
+            <div className="space-y-6">
+              <h3 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.3em]">Current Obsessions</h3>
+              {isEditing ? <textarea value={localProfile.loves} onChange={(e) => setLocalProfile(p => ({ ...p, loves: e.target.value }))} className={inputClasses + " h-32"} /> : (
+                <div className="flex flex-wrap gap-2">{loveTags.map((tag, i) => <span key={i} className="bg-orange-950/20 text-orange-400 text-[10px] font-black px-4 py-2 rounded-xl">{tag}</span>)}</div>
+              )}
+            </div>
+            <div className="space-y-6">
+              <h3 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.3em]">Deep Influences</h3>
+              {isEditing ? <textarea value={localProfile.inspirations} onChange={(e) => setLocalProfile(p => ({ ...p, inspirations: e.target.value }))} className={inputClasses + " h-32"} /> : (
+                <div className="flex flex-wrap gap-2">{inspirationTags.map((tag, i) => <span key={i} className="bg-indigo-950/20 text-indigo-400 text-[10px] font-black px-4 py-2 rounded-xl">{tag}</span>)}</div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
 
         {/* Studio Roadmap */}
         <section className="space-y-8">
@@ -595,122 +443,64 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
                 </p>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <label className={labelClasses + " mb-0"}>Project Threads</label>
-                    <p className="text-[9px] text-stone-600 font-bold ml-1">
-                      Broad creative paths, themes, or future project seeds.
-                    </p>
-                  </div>
-                </div>
-
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div className="flex space-x-2">
-                      <input 
-                        value={newThreadInput}
-                        onChange={(e) => setNewThreadInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && addProjectThread()}
-                        placeholder="Add a thread..."
-                        className={inputClasses + " flex-1"}
-                      />
-                      <button 
-                        onClick={addProjectThread}
-                        className="bg-orange-800 px-4 rounded-xl border border-orange-700 active:scale-95 transition-all text-white font-black"
-                      >
-                        +
-                      </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <label className={labelClasses + " mb-0"}>Project Threads</label>
+                      <p className="text-[9px] text-stone-600 font-bold ml-1">
+                        Broad creative paths or future project seeds.
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      {localProfile.upcomingProjects.map((proj, i) => (
-                        <div key={i} className="flex items-center justify-between bg-stone-900/40 p-3 rounded-2xl border border-stone-800/40">
-                          <span className="text-stone-100 font-bold text-sm">{proj}</span>
-                          <button onClick={() => removeProjectThread(i)} className="text-stone-600 hover:text-rose-500 p-1">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                          </button>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      <div className="flex space-x-2">
+                        <input value={newThreadInput} onChange={(e) => setNewThreadInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addProjectThread()} placeholder="Add thread..." className={inputClasses + " flex-1"} />
+                        <button onClick={addProjectThread} className="bg-orange-800 px-4 rounded-xl text-white">+</button>
+                      </div>
+                      <div className="space-y-2">
+                        {(Array.isArray(localProfile.upcomingProjects) ? localProfile.upcomingProjects : []).map((proj, i) => (
+                          <div key={i} className="flex items-center justify-between bg-stone-900/40 p-3 rounded-2xl border border-stone-800/40">
+                            <span className="text-stone-100 font-bold text-sm">{proj}</span>
+                            <button onClick={() => removeProjectThread(i)} className="text-rose-500">×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(Array.isArray(profile.upcomingProjects) ? profile.upcomingProjects : []).map((proj, i) => (
+                        <div key={i} className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center border border-stone-800 text-[10px] text-stone-600">{i + 1}</div>
+                          <p className="text-stone-300 font-bold">{proj}</p>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {profile.upcomingProjects.map((proj, i) => (
-                      <div key={i} className="flex items-center space-x-4 group cursor-default">
-                        <div className="w-10 h-10 bg-stone-900 rounded-2xl flex items-center justify-center border border-stone-800 text-stone-600 group-hover:border-orange-900 transition-colors">
-                          <span className="text-[10px] font-black">{i + 1}</span>
-                        </div>
-                        <p className="text-stone-300 font-bold group-hover:text-stone-50 transition-colors">{proj}</p>
-                      </div>
-                    ))}
-                    {profile.upcomingProjects.length === 0 && <p className="text-stone-700 text-xs italic ml-1">No threads recorded.</p>}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-6 pt-10 border-t border-stone-800/40">
-                <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <label className={labelClasses + " mb-0"}>Studio Milestones</label>
-                    <p className="text-[9px] text-stone-600 font-bold ml-1">
-                      Target dates for submissions, exhibitions, or production goals.
-                    </p>
-                  </div>
-                  {isEditing && (
-                    <button 
-                      onClick={addMilestone}
-                      className="text-[9px] font-black uppercase text-orange-500 bg-orange-950/20 px-3 py-1.5 rounded-xl border border-orange-900/30 active:scale-95 transition-all"
-                    >
-                      + Add Target
-                    </button>
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  {(isEditing ? localProfile.deadlines : profile.deadlines).map((d) => (
-                    <div key={d.id} className="relative flex items-center group">
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-600 z-10"></div>
-                      <div className="absolute left-[3px] top-0 bottom-0 w-[2px] bg-stone-800 group-last:bottom-1/2"></div>
-                      
-                      <div className="flex-1 ml-8 bg-stone-900/40 p-5 rounded-2xl border border-stone-800/30 flex justify-between items-center group-hover:bg-stone-900 transition-colors">
-                        {isEditing ? (
-                          <div className="flex flex-col space-y-3 w-full pr-4">
-                            <input 
-                              value={d.title}
-                              onChange={(e) => updateMilestone(d.id, { title: e.target.value })}
-                              className="bg-transparent border-none text-stone-100 font-bold text-sm focus:outline-none w-full border-b border-stone-800 focus:border-orange-900/50 pb-1"
-                              placeholder="Milestone Title"
-                            />
-                            <input 
-                              type="date"
-                              value={d.date}
-                              onChange={(e) => updateMilestone(d.id, { date: e.target.value })}
-                              className="bg-orange-950/20 text-orange-500 font-mono text-[9px] px-3 py-1 rounded-full border border-orange-900/30 uppercase tracking-widest focus:outline-none w-fit"
-                            />
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-stone-100 font-bold text-sm">{d.title}</p>
-                            <span className="text-stone-500 font-mono text-[10px] tracking-widest bg-stone-800 px-3 py-1 rounded-full">
-                              {new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                            </span>
-                          </>
-                        )}
-                        
-                        {isEditing && (
-                          <button 
-                            onClick={() => removeMilestone(d.id)}
-                            className="text-stone-700 hover:text-rose-500 transition-colors p-2"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                        )}
-                      </div>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <label className={labelClasses + " mb-0"}>Studio Milestones</label>
+                      <p className="text-[9px] text-stone-600 font-bold ml-1">Target dates for goals.</p>
                     </div>
-                  ))}
-                  {(!isEditing ? profile.deadlines.length === 0 : localProfile.deadlines.length === 0) && (
-                    <p className="text-stone-700 text-xs italic ml-8 py-2">No studio targets set.</p>
-                  )}
+                    {isEditing && <button onClick={addMilestone} className="text-[9px] font-black uppercase text-orange-500">+ Target</button>}
+                  </div>
+                  <div className="space-y-4">
+                    {(Array.isArray(isEditing ? localProfile.deadlines : profile.deadlines) ? (isEditing ? localProfile.deadlines : profile.deadlines) : []).map(d => (
+                      <div key={d.id} className="flex items-center space-x-4 bg-stone-900/40 p-4 rounded-2xl border border-stone-800/30">
+                        <div className="w-2 h-2 rounded-full bg-orange-600"></div>
+                        <div className="flex-1">
+                          <p className="text-stone-100 font-bold text-sm tracking-tight">{d.title}</p>
+                          <span className="text-stone-500 font-mono text-[9px] tracking-widest">{new Date(d.date).toLocaleDateString()}</span>
+                        </div>
+                        {isEditing && <button onClick={() => removeMilestone(d.id)} className="text-stone-700">×</button>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -767,7 +557,6 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
              )}
            </div>
         )}
-      </div>
 
       {/* Floating Sticky Save Button - Appears only when editing */}
       {isEditing && (

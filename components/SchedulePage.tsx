@@ -394,7 +394,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
      project_id: '',
      notes: '',
      reminder_set: false,
-     reminder_config: undefined as any
+     reminder_config: null as any
    });
 
   useEffect(() => {
@@ -447,7 +447,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
 
   const handleReminderCancel = () => {
     if (isReminderFormSource) {
-      setFormData(prev => ({ ...prev, reminder_set: false, reminder_config: undefined }));
+      setFormData(prev => ({ ...prev, reminder_set: false, reminder_config: null }));
     }
     setShowReminderPopup(false);
     setReminderTargetId(null);
@@ -462,7 +462,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
       project_id: '',
       notes: '',
       reminder_set: false,
-      reminder_config: undefined
+      reminder_config: null
     });
     setEditingItemId(null);
     setShowForm(false);
@@ -718,7 +718,7 @@ const SchedulePage = forwardRef<SchedulePageRef, SchedulePageProps>(({
                         setIsReminderFormSource(true);
                         setShowReminderPopup(true);
                       } else {
-                        setFormData({...formData, reminder_set: false, reminder_config: undefined});
+                        setFormData({...formData, reminder_set: false, reminder_config: null});
                       }
                     }} 
                     className="w-5 h-5 accent-orange-700" 

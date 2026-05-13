@@ -84,6 +84,19 @@ async function testConnection() {
 }
 testConnection();
 
+function sanitizeForFirestore(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  const sanitized = { ...obj };
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] === undefined) {
+      delete sanitized[key];
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeForFirestore(sanitized[key]);
+    }
+  });
+  return sanitized;
+}
+
 const STORAGE_KEY = 'workshop_flow_state_v8'; // Bumped version for new schema
 
 const initialEnergy: EnergyCheckIn[] = [];
@@ -190,6 +203,8 @@ export const useStore = () => {
         loves: '',
         inspirations: '',
         obsessions: '',
+        upcomingProjects: [],
+        deadlines: [],
         isOnboarded: true,
         tickets: { remaining: 3, totalUsed: 0, lastResetDate: new Date().toISOString().split('T')[0] }
       }, { merge: true });
@@ -299,7 +314,12 @@ export const useStore = () => {
         const data = docSnap.data();
         setState(prev => ({ 
           ...prev, 
-          artistProfile: { ...prev.artistProfile, ...data as ArtistProfile },
+          artistProfile: { 
+            ...prev.artistProfile, 
+            ...data as ArtistProfile,
+            upcomingProjects: Array.isArray((data as any).upcomingProjects) ? (data as any).upcomingProjects : [],
+            deadlines: Array.isArray((data as any).deadlines) ? (data as any).deadlines : []
+          },
           tickets: data.tickets ? { ...prev.tickets, ...data.tickets } : prev.tickets
         }));
       }
@@ -406,7 +426,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${newProject.id}`;
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'projects', newProject.id), newProject);
+        await setDoc(doc(db, 'users', currentUser.uid, 'projects', newProject.id), sanitizeForFirestore(newProject));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -420,7 +440,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), updates);
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), sanitizeForFirestore(updates));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -436,7 +456,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { phases, updatedAt: new Date().toISOString() });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), sanitizeForFirestore({ phases, updatedAt: new Date().toISOString() }));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -481,7 +501,7 @@ export const useStore = () => {
         // If there's an audio recording, save it to the recordings collection separately
         if (log.audio_base64) {
           const recordingId = Math.random().toString(36).substr(2, 9);
-          const recordingData = {
+          const recordingData = sanitizeForFirestore({
             id: recordingId,
             date: new Date().toISOString(),
             audio_base64: log.audio_base64,
@@ -489,7 +509,7 @@ export const useStore = () => {
             transcript: log.raw_transcript,
             related_project_id: log.project_id,
             related_session_id: finalLog.id
-          };
+          });
           
           await setDoc(doc(db, 'users', userId, 'recordings', recordingId), recordingData);
           finalLog.audio_recording_id = recordingId;
@@ -497,7 +517,7 @@ export const useStore = () => {
           finalLog.audio_base64 = null;
         }
 
-        await setDoc(doc(db, 'users', userId, 'sessions', finalLog.id), finalLog);
+        await setDoc(doc(db, 'users', userId, 'sessions', finalLog.id), sanitizeForFirestore(finalLog));
         
         const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', log.project_id));
         if (projectDoc.exists()) {
@@ -532,7 +552,7 @@ export const useStore = () => {
         if (!logDoc.exists()) return;
         
         const oldLog = logDoc.data() as WorkshopLog;
-        await updateDoc(doc(db, 'users', userId, 'sessions', id), updates);
+        await updateDoc(doc(db, 'users', userId, 'sessions', id), sanitizeForFirestore(updates));
         
         const oldDuration = oldLog.actual_duration_minutes || oldLog.duration_minutes || 0;
         const newDuration = updates.actual_duration_minutes !== undefined ? updates.actual_duration_minutes : 
@@ -542,10 +562,10 @@ export const useStore = () => {
           const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', oldLog.project_id));
           if (projectDoc.exists()) {
             const currentTotal = projectDoc.data().total_minutes || 0;
-            await updateDoc(doc(db, 'users', userId, 'projects', oldLog.project_id), {
+            await updateDoc(doc(db, 'users', userId, 'projects', oldLog.project_id), sanitizeForFirestore({
               total_minutes: currentTotal - oldDuration + newDuration,
               updated_at: new Date().toISOString()
-            });
+            }));
           }
         }
       } catch (err) {
@@ -627,7 +647,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/profiles/main`;
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), profile, { merge: true });
+        await setDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), sanitizeForFirestore(profile), { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -641,7 +661,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/calendarEvents/${newItem.id}`;
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', newItem.id), newItem);
+        await setDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', newItem.id), sanitizeForFirestore(newItem));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -654,7 +674,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/calendarEvents/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', id), updates);
+        await updateDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', id), sanitizeForFirestore(updates));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -694,7 +714,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/calendarEvents/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', id), updates);
+        await updateDoc(doc(db, 'users', currentUser.uid, 'calendarEvents', id), sanitizeForFirestore(updates));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -722,7 +742,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/recordings/${finalRecording.id}`;
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'recordings', finalRecording.id), finalRecording);
+        await setDoc(doc(db, 'users', currentUser.uid, 'recordings', finalRecording.id), sanitizeForFirestore(finalRecording));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
