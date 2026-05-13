@@ -123,6 +123,50 @@ const ReminderPopup: React.FC<{
   );
 };
 
+const DeleteConfirmationPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  itemTitle: string;
+}> = ({ isOpen, onClose, onConfirm, itemTitle }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-stone-950/90 z-[500] flex items-center justify-center p-6 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-[#1a1715] border border-stone-800 shadow-2xl rounded-[2.5rem] w-full max-w-sm p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 bg-rose-950/30 border border-rose-900/30 rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <svg className="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-black text-stone-100 uppercase tracking-tight">Delete Goal?</h2>
+          <p className="text-stone-500 text-[10px] font-black uppercase tracking-widest leading-relaxed px-4">
+            Are you sure you want to remove <span className="text-stone-200">"{itemTitle}"</span>? This will permanently erase it from your studio schedule.
+          </p>
+        </div>
+
+        <div className="flex space-x-3 pt-4">
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="flex-1 py-4 bg-stone-900 text-stone-500 font-black uppercase text-[10px] rounded-2xl border border-stone-800 hover:bg-stone-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={onConfirm} 
+            className="flex-1 py-4 bg-rose-900 text-rose-100 font-black uppercase text-[10px] rounded-2xl border border-rose-800 shadow-xl shadow-rose-950/40 active:scale-95 transition-transform"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SwipeableEventCard: React.FC<{
   item: ScheduleItem;
   onEdit: (item: ScheduleItem) => void;
@@ -134,6 +178,7 @@ const SwipeableEventCard: React.FC<{
   const [currentX, setCurrentX] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const swipeRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -242,13 +287,23 @@ const SwipeableEventCard: React.FC<{
           <span className="text-[8px] font-black uppercase">{item.reminder_set ? 'On' : 'Remind'}</span>
         </button>
         <button 
-          onClick={() => { !isProfileMilestone && onRemove(item.id); close(); }}
+          onClick={() => { !isProfileMilestone && setShowDeleteConfirm(true); close(); }}
           className={`w-[70px] bg-rose-900 text-rose-100 flex flex-col items-center justify-center ${isProfileMilestone ? 'opacity-30 cursor-not-allowed' : ''}`}
         >
           <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           <span className="text-[8px] font-black uppercase">Delete</span>
         </button>
       </div>
+
+      <DeleteConfirmationPopup 
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          onRemove(item.id);
+          setShowDeleteConfirm(false);
+        }}
+        itemTitle={item.title}
+      />
 
       {/* Foreground Card */}
       <div 
@@ -341,7 +396,7 @@ const SwipeableEventCard: React.FC<{
                     <span>{item.reminder_set ? 'Alert On' : 'Remind'}</span>
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+                    onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
                     className="flex-1 flex items-center justify-center space-x-2 py-3 bg-rose-950/20 hover:bg-rose-900/30 rounded-2xl border border-rose-900/20 text-rose-500 transition-all text-[9px] font-black uppercase tracking-widest"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
