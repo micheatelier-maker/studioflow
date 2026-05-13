@@ -86,12 +86,17 @@ testConnection();
 
 function sanitizeForFirestore(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
-  const sanitized = { ...obj };
-  Object.keys(sanitized).forEach(key => {
-    if (sanitized[key] === undefined) {
-      delete sanitized[key];
-    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeForFirestore(sanitized[key]);
+  
+  if (Array.isArray(obj)) {
+    return obj
+      .filter(item => item !== undefined)
+      .map(item => sanitizeForFirestore(item));
+  }
+  
+  const sanitized: any = {};
+  Object.keys(obj).forEach(key => {
+    if (obj[key] !== undefined) {
+      sanitized[key] = sanitizeForFirestore(obj[key]);
     }
   });
   return sanitized;
@@ -193,7 +198,7 @@ export const useStore = () => {
       
       // Initialize profile in Firestore
       const profileDocRef = doc(db, 'users', result.user.uid, 'profiles', 'main');
-      await setDoc(profileDocRef, {
+      await setDoc(profileDocRef, sanitizeForFirestore({
         stageName: name,
         realName: name,
         discipline: 'Modular Synthesis',
@@ -207,7 +212,7 @@ export const useStore = () => {
         deadlines: [],
         isOnboarded: true,
         tickets: { remaining: 3, totalUsed: 0, lastResetDate: new Date().toISOString().split('T')[0] }
-      }, { merge: true });
+      }), { merge: true });
 
       return result.user;
     } catch (error) {
@@ -477,7 +482,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_locked: newLockState });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), sanitizeForFirestore({ is_locked: newLockState }));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -522,10 +527,10 @@ export const useStore = () => {
         const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', log.project_id));
         if (projectDoc.exists()) {
           const currentTotal = projectDoc.data().total_minutes || 0;
-          await updateDoc(doc(db, 'users', userId, 'projects', log.project_id), {
+          await updateDoc(doc(db, 'users', userId, 'projects', log.project_id), sanitizeForFirestore({
             total_minutes: currentTotal + duration,
             updated_at: new Date().toISOString()
-          });
+          }));
         }
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, sessionPath);
@@ -596,7 +601,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_archived: true });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), sanitizeForFirestore({ is_archived: true }));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -609,7 +614,7 @@ export const useStore = () => {
     if (currentUser) {
       const path = `users/${currentUser.uid}/projects/${id}`;
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), { is_archived: false });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'projects', id), sanitizeForFirestore({ is_archived: false }));
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, path);
       }
@@ -775,10 +780,10 @@ export const useStore = () => {
     }));
     if (currentUser) {
        const path = `users/${currentUser.uid}/profiles/main`;
-       updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), {
+       updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), sanitizeForFirestore({
          'tickets.remaining': newRemaining,
          'tickets.totalUsed': newTotalUsed
-       }).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
+       })).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
     }
   };
 
@@ -794,9 +799,9 @@ export const useStore = () => {
     }));
     if (currentUser) {
       const path = `users/${currentUser.uid}/profiles/main`;
-      updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), {
+      updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), sanitizeForFirestore({
         'tickets.remaining': newRemaining
-      }).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
+      })).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
     }
   };
 
