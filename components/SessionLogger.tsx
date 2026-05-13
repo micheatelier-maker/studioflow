@@ -53,17 +53,18 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0 && isMicEnabledRef.current && !isPausedRef.current) {
+        if (event.data.size > 0 && isMicEnabledRef.current) {
           audioChunksRef.current.push(event.data);
           
           // Live harvesting for speech bubbles
           const blob = event.data;
           const reader = new FileReader();
+          const currentMimeType = mediaRecorder.mimeType || 'audio/webm';
           reader.readAsDataURL(blob);
           reader.onloadend = async () => {
             const base64 = (reader.result as string).split(',')[1];
             try {
-              const seedText = await summarizeSeed(base64, 'audio/webm');
+              const seedText = await summarizeSeed(base64, currentMimeType);
               if (seedText) {
                 setSeeds(prev => [
                   ...prev, 
@@ -144,14 +145,29 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
     if (isMicEnabled && mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       setIsProcessing(true);
       onConsumeTickets(finalMinutes);
+      const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+      
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (audioChunksRef.current.length === 0) {
+          onComplete({
+            type,
+            project_id: selectedProjectId === 'new' ? '' : selectedProjectId || '',
+            actual_duration_minutes: finalMinutes,
+            date: new Date().toISOString(),
+            raw_transcript: '[Mic was active but no audio captured]',
+            materials_used: []
+          });
+          setIsProcessing(false);
+          return;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         try {
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
             const base64Audio = (reader.result as string).split(',')[1];
-            const result = await extractLogFromAudio(base64Audio, 'audio/webm', type);
+            const result = await extractLogFromAudio(base64Audio, mimeType, type);
             onComplete({ 
               ...result, 
               project_id: selectedProjectId || result.project_id || '',

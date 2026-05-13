@@ -321,9 +321,9 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
         </div>
 
         {/* Center Column: DNA & Tools */}
-        <div className="lg:col-span-5 space-y-12">
-          <section className="space-y-6">
-            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-8 lg:mt-0 transition-all duration-700">
+        <div className="lg:col-span-5 space-y-8">
+          <section className="space-y-4">
+            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-14 lg:mt-0 transition-all duration-700">
               <CreativeDNA 
                   disciplineColor={isEditing ? localProfile.disciplineColor : profile.disciplineColor} 
                   styleColor={isEditing ? localProfile.styleColor : profile.styleColor}
@@ -564,10 +564,10 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
 
       {/* Floating Sticky Save Button - Appears only when editing */}
       {isEditing && (
-        <div className="fixed bottom-[110px] left-0 right-0 px-8 z-[100] lg:sticky lg:bottom-12 lg:-mt-6 lg:mb-12 lg:px-1 lg:z-50 animate-in slide-in-from-bottom duration-1000">
+        <div className="fixed bottom-[110px] left-0 right-0 px-8 z-[100] lg:sticky lg:bottom-6 lg:-mt-10 lg:mb-12 lg:px-4 lg:z-50 animate-in slide-in-from-bottom duration-1000">
           <button 
             onClick={handleSave}
-            className="w-full py-5 rounded-[2.2rem] font-black text-xs uppercase tracking-[0.3em] bg-orange-800 border border-orange-700 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] lg:shadow-[0_20px_40px_rgba(154,52,18,0.2)] backdrop-blur-md flex items-center justify-center space-x-3 active:scale-[0.97] transition-all duration-500 shadow-orange-950/40"
+            className="w-full max-w-lg mx-auto py-5 rounded-[2.2rem] font-black text-xs uppercase tracking-[0.3em] bg-orange-800 border border-orange-700 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] lg:shadow-[0_20px_40px_rgba(154,52,18,0.2)] backdrop-blur-md flex items-center justify-center space-x-3 active:scale-[0.97] transition-all duration-500 shadow-orange-950/40"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

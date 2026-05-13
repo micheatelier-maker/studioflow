@@ -173,16 +173,17 @@ const FlowSession: React.FC<FlowSessionProps> = ({
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0 && isMicEnabledRef.current && !isPausedRef.current) {
+        if (event.data.size > 0 && isMicEnabledRef.current) {
           audioChunksRef.current.push(event.data);
           
           const blob = event.data;
           const reader = new FileReader();
+          const currentMimeType = mediaRecorder.mimeType || 'audio/webm';
           reader.readAsDataURL(blob);
           reader.onloadend = async () => {
             const base64 = (reader.result as string).split(',')[1];
             try {
-              const seedText = await summarizeSeed(base64, 'audio/webm');
+              const seedText = await summarizeSeed(base64, currentMimeType);
               if (seedText) {
                 setSeeds(prev => [
                   ...prev, 
@@ -247,20 +248,22 @@ const FlowSession: React.FC<FlowSessionProps> = ({
     setIsPaused(true);
     setIsProcessing(true);
     
-    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     const finalMinutes = Math.ceil(seconds / 60);
 
     if (isMicEnabled) {
       onConsumeTickets(finalMinutes);
     }
 
+    const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+
     try {
       if (audioChunksRef.current.length > 0) {
         const reader = new FileReader();
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
           const base64Audio = (reader.result as string).split(',')[1];
-          const result = await extractLogFromAudio(base64Audio, 'audio/webm', sessionType);
+          const result = await extractLogFromAudio(base64Audio, mimeType, sessionType);
           onSessionComplete({
             ...result,
             project_id: selectedProjectId || result.project_id || '',

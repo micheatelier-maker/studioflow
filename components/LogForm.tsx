@@ -93,15 +93,16 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = async () => {
         setIsProcessingStep(true);
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64 = (reader.result as string).split(',')[1];
-          const refined = await processDeepDiveResponse({ base64, minType: 'audio/webm' }, currentQuestion.question);
+          const refined = await processDeepDiveResponse({ base64, minType: mimeType }, currentQuestion.question);
           updateStepData(refined);
         };
       };
-      const reader = new FileReader();
       mediaRecorder.start();
       setIsRecording(true);
     } catch (e) { alert("Mic required for deep dive."); }

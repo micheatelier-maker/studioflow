@@ -74,7 +74,8 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
 
       mediaRecorder.onstop = async () => {
         setIsProcessing(true);
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const durationSeconds = recordingTime;
         
         try {
@@ -90,7 +91,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
               related_project_id: initialData?.id
             });
 
-            const refinedNarrative = await refineNarrativeFromAudio(base64Audio, 'audio/webm', description);
+            const refinedNarrative = await refineNarrativeFromAudio(base64Audio, mimeType, description);
             setDescription(refinedNarrative);
             setIsProcessing(false);
           };
