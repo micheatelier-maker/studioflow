@@ -126,10 +126,6 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
   const displaySeeds = seeds.slice(-3);
 
   const startRecording = async () => {
-    if (isMicEnabled && tickets <= 0) {
-      setError("Out of AI tickets. Upgrade to continue using Studio Ear.");
-      return;
-    }
     setError(null);
     setRecordingTime(0);
     setIsPaused(false);
@@ -381,18 +377,6 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
                   <div className={`text-5xl font-mono font-bold tracking-[0.1em] drop-shadow-md transition-colors ${isMicEnabled ? 'text-orange-400' : 'text-stone-600'}`}>
                     {formatTime(recordingTime)}
                   </div>
-                  {isMicEnabled && (
-                    <div className="flex items-center space-x-2 bg-stone-900/60 px-4 py-2 rounded-full border border-stone-800/40 animate-in fade-in duration-700">
-                      <div className="flex space-x-1">
-                        {Array.from({ length: ticketsBeingUsed }).map((_, i) => (
-                          <div key={i} className="w-2 h-2 bg-orange-500 rounded-sm rotate-45 animate-pulse" />
-                        ))}
-                      </div>
-                      <span className="text-[8px] font-black text-stone-500 uppercase tracking-widest">
-                        {ticketsBeingUsed} {ticketsBeingUsed === 1 ? 'Ticket' : 'Tickets'} Used
-                      </span>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <button 

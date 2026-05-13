@@ -139,6 +139,7 @@ export interface AppState {
   artistProfile: ArtistProfile;
   tickets: {
     remaining: number;
+    usedMinutesThisWeek: number;
     totalUsed: number;
     lastResetDate: string;
   };

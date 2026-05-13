@@ -79,6 +79,22 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDigDeeperNew = () => {
+    setIsFreshLog(false);
+    setIsDeepDiveMode(true);
+    setExtractedData({ 
+      type: 'session', 
+      date: new Date().toISOString(), 
+      project_id: '', 
+      raw_transcript: '',
+      summary: '',
+      wins: '',
+      challenges: '',
+      next_steps: '',
+      mood: 3
+    } as any);
+  };
+
   const handleNewLogFromProject = (project: Project) => {
     setPreSelectedProject(project);
     setShowTypePicker(true);
@@ -119,7 +135,7 @@ const App: React.FC = () => {
             <Dashboard 
               state={state} 
               onLogClick={() => setShowTypePicker(true)} 
-              onTextLogClick={() => handleManualEntry('session')}
+              onDigDeeperClick={handleDigDeeperNew}
               onNewProjectClick={() => setShowProjectForm(true)}
               onNewLogFromProject={handleNewLogFromProject}
               onScheduleClick={() => { setFocusedScheduleDate(null); setActiveTab('commitments'); }}

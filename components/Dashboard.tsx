@@ -9,7 +9,7 @@ import { DEEP_DIVE_QUESTIONS } from './LogForm';
 interface DashboardProps {
   state: AppState;
   onLogClick: () => void;
-  onTextLogClick: () => void;
+  onDigDeeperClick: () => void;
   onNewProjectClick: () => void;
   onNewLogFromProject: (project: Project) => void;
   onScheduleClick: () => void;
@@ -55,6 +55,7 @@ const getStrategySuitability = (strategy: BlockStrategy, energy: number, hour: n
 const Dashboard: React.FC<DashboardProps> = ({ 
   state, 
   onLogClick, 
+  onDigDeeperClick,
   onNewProjectClick,
   onNewLogFromProject,
   onScheduleClick,
@@ -70,8 +71,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onNewCommitmentClick
 }) => {
   const [isEnergyExpanded, setIsEnergyExpanded] = useState(false);
-  const selectedLevel = state.energyHistory && state.energyHistory.length > 0 ? state.energyHistory[0].level : 3;
-  const [selectedLevelState, setSelectedLevel] = useState(selectedLevel);
+  const initialEnergyLevel = state.energyHistory && state.energyHistory.length > 0 ? state.energyHistory[0].level : 3;
+  const [selectedLevelState, setSelectedLevel] = useState(initialEnergyLevel);
   const [previousLevel, setPreviousLevel] = useState(selectedLevelState);
   const [energyNote, setEnergyNote] = useState('');
   const [showCommitmentInfo, setShowCommitmentInfo] = useState(false);
@@ -117,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, []);
 
   const activeProjects = state.projects.filter(p => !p.is_archived);
-  const recentLogs = state.logs.filter(l => l.type === 'session').slice(0, 3); // Changed from 4 to 3
+  const recentLogs = state.logs.filter(l => l.type === 'session').slice(0, 1);
   const currentEnergy = state.energyHistory[0]?.level || 0;
   const recentEnergyHistory = useMemo(() => state.energyHistory.slice(0, 3), [state.energyHistory]);
 
@@ -198,13 +199,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, []);
 
   const handleSaveEnergy = () => {
-    onEnergyUpdate(selectedLevel, energyNote);
+    onEnergyUpdate(selectedLevelState, energyNote);
     setEnergyNote('');
     setIsEnergyExpanded(false);
   };
 
   const handleLevelSelect = (lvl: number) => {
-    setPreviousLevel(selectedLevel);
+    setPreviousLevel(selectedLevelState);
     setSelectedLevel(lvl);
   };
 
@@ -294,16 +295,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     <section className="space-y-8">
       <div className="flex items-end justify-between px-1">
         <h2 className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Latest Ripples</h2>
-        <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest">3 Recent Cycles</span>
+        <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest">Recent Focus</span>
       </div>
       
       <div className="space-y-6">
         {Array.isArray(recentLogs) && recentLogs.map((log, index) => (
           <div key={log.id} className="relative">
-            {/* Connection line between cards */}
-            {index < recentLogs.length - 1 && (
-              <div className="absolute left-8 top-full w-px h-6 bg-gradient-to-b from-orange-900/40 to-transparent z-0"></div>
-            )}
+            {/* Connection line to Dig Deeper card */}
+            <div className="absolute left-10 top-full w-px h-6 bg-gradient-to-b from-orange-900/60 to-orange-900/10 z-0"></div>
             
             <div 
               onClick={() => setExpandedRippleId(expandedRippleId === log.id ? null : log.id)}
@@ -328,11 +327,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                         return h > 0 ? `${h}h ${m}m` : `${m}m`;
                       })()}
                     </span>
-                    {log.audio_base64 && (
-                      <div className="flex items-center space-x-1 text-orange-500/60">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                      </div>
-                    )}
                   </div>
                 </div>
                 
@@ -340,7 +334,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <div className="mt-4 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300">
                     <div className="flex items-center space-x-2">
                        <div className="w-1.5 h-1.5 rounded-full bg-orange-600/60 flex-shrink-0 animate-pulse"></div>
-                       <p className="text-stone-500 text-[10px] font-medium italic opacity-90 pr-2">
+                       <p className="text-stone-500 text-[10px] font-medium italic opacity-90 pr-2 line-clamp-1">
                          {log.wins || log.summary || "Deep creative flow recorded."}
                        </p>
                     </div>
@@ -349,7 +343,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
 
-              {expandedRippleId === log.id && (
+              { expandedRippleId === log.id && (
                 <div className="mt-6 pt-6 border-t border-stone-800/40 space-y-5 animate-in slide-in-from-top-2 duration-300 w-full">
                   <div className="grid grid-cols-2 gap-6">
                     {log.wins && (
@@ -384,25 +378,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    {log.audio_base64 && (
-                      <div className="col-span-2 sm:col-span-1">
-                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Voice Log</span>
-                        <div className="flex items-center space-x-2 text-orange-500">
-                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                           <span className="text-[10px] font-medium italic">Captured @ {new Date(log.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {log.how_it_went && (
-                    <div className="bg-stone-900/50 p-4 rounded-2xl border border-stone-800/40">
-                      <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Context</span>
-                      <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.how_it_went}</p>
-                    </div>
-                  )}
-
                   <button 
                     onClick={(e) => { e.stopPropagation(); onDeepDiveClick?.(log); }}
                     className="w-full py-3 bg-stone-900/80 hover:bg-stone-800 text-stone-400 hover:text-stone-200 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border border-stone-800/60 transition-all text-center"
@@ -414,7 +389,27 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         ))}
-        {recentLogs.length === 0 && (
+
+        {/* Dig Deeper Question Card */}
+        <div 
+          onClick={() => onDigDeeperClick()}
+          className="bg-orange-950/10 border border-orange-900/20 rounded-[2.5rem] p-8 space-y-6 active:scale-[0.99] transition-all cursor-pointer group hover:bg-orange-950/20"
+        >
+          <div className="space-y-1">
+             <span className="text-orange-500 text-[8px] font-black uppercase tracking-[0.3em]">Dig Deeper</span>
+             <h3 className="text-stone-100 text-lg font-black tracking-tight leading-tight group-hover:text-orange-400 transition-colors">
+               {randomDeepDiveQuestion?.question}
+             </h3>
+          </div>
+          <div className="flex items-center space-x-3 text-stone-600 group-hover:text-stone-400">
+             <div className="p-2 bg-stone-900/40 rounded-xl">
+               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+             </div>
+             <span className="text-[9px] font-black uppercase tracking-widest">Write Reflection</span>
+          </div>
+        </div>
+
+        {recentLogs.length === 0 && !state.projects.length && (
           <div className="py-12 text-center border-2 border-dashed border-stone-900/40 rounded-[2.5rem] bg-stone-900/10">
             <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.3em]">No creative ripples detected</p>
           </div>
@@ -699,13 +694,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                </button>
             </div>
           </div>
-          <button 
-            onClick={onLogClick}
-            aria-label="Studio Ear"
-            className="w-14 h-14 bg-orange-700 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-orange-950/50 border border-orange-600/40 active:scale-95 transition-all hover:bg-orange-600"
-          >
-            <Mic className="w-6 h-6" />
-          </button>
           
           <button 
             onClick={onProfileClick}
@@ -743,14 +731,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-4">
                   <div className="flex justify-between items-center px-1">
                     <h4 className="text-stone-500 text-[10px] font-black uppercase tracking-[0.2em]">Creative Energy</h4>
-                    <span className={`text-orange-600 text-[8px] font-black uppercase tracking-widest transition-all duration-300 ${selectedLevel === 5 ? 'animate-pulse scale-110' : ''}`}>
-                      {getEnergyDescriptor(selectedLevel)}
+                    <span className={`text-orange-600 text-[8px] font-black uppercase tracking-widest transition-all duration-300 ${selectedLevelState === 5 ? 'animate-pulse scale-110' : ''}`}>
+                      {getEnergyDescriptor(selectedLevelState)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center bg-stone-900/60 p-5 rounded-[2rem] border border-stone-800/40">
                       {[0, 1, 2, 3, 4, 5].map(lvl => {
-                        const isLit = selectedLevel >= lvl && lvl > 0;
-                        const isCurrent = selectedLevel === lvl;
+                        const isLit = selectedLevelState >= lvl && lvl > 0;
+                        const isCurrent = selectedLevelState === lvl;
 
                         return (
                           <button 
@@ -1183,20 +1171,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
 
-        {/* AI Token Usage Box */}
-        <div className="mt-8 px-1">
-          <div className="bg-[#1a1715] border border-orange-900/20 rounded-[2rem] p-6 flex items-center justify-between shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600/5 blur-[40px] rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-            <div className="space-y-1 relative z-10">
-              <h4 className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">AI Capacity</h4>
-              <p className="text-stone-100 text-sm font-black tracking-tight">Weekly AI Tokens Used</p>
-            </div>
-            <div className="text-right relative z-10">
-              <span className="text-orange-500 text-3xl font-black tabular-nums">{state.tickets.totalUsed}</span>
-              <span className="text-stone-700 text-[8px] font-black uppercase tracking-widest block">In Flow</span>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

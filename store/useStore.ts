@@ -156,7 +156,8 @@ const initialState: AppState = {
     isOnboarded: true,
   },
   tickets: {
-    remaining: 3,
+    remaining: 10,
+    usedMinutesThisWeek: 0,
     totalUsed: 0,
     lastResetDate: new Date().toISOString().split('T')[0]
   },
@@ -191,6 +192,44 @@ export const useStore = () => {
     return () => unsubscribe();
   }, []);
 
+  // Weekly Ticket Reset Logic
+  useEffect(() => {
+    const checkTicketReset = () => {
+      const { lastResetDate } = state.tickets;
+      if (!lastResetDate) return;
+
+      const now = new Date();
+      const lastReset = new Date(lastResetDate);
+      
+      // Check if 7 days have passed
+      const diffTime = Math.abs(now.getTime() - lastReset.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+      
+      if (diffDays >= 7) {
+        const newResetDate = now.toISOString().split('T')[0];
+        const resetTickets = {
+          remaining: 10,
+          usedMinutesThisWeek: 0,
+          totalUsed: 0,
+          lastResetDate: newResetDate
+        };
+        
+        setState(prev => ({
+          ...prev,
+          tickets: resetTickets
+        }));
+
+        if (currentUser) {
+          updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), sanitizeForFirestore({
+            tickets: resetTickets
+          })).catch(err => console.error("Failed to reset tickets in Firestore", err));
+        }
+      }
+    };
+
+    checkTicketReset();
+  }, [currentUser, state.tickets.lastResetDate]);
+
   const signUp = async (name: string, email: string, pass: string) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, pass);
@@ -211,7 +250,7 @@ export const useStore = () => {
         upcomingProjects: [],
         deadlines: [],
         isOnboarded: true,
-        tickets: { remaining: 3, totalUsed: 0, lastResetDate: new Date().toISOString().split('T')[0] }
+        tickets: { remaining: 10, totalUsed: 0, lastResetDate: new Date().toISOString().split('T')[0] }
       }), { merge: true });
 
       return result.user;
@@ -358,12 +397,22 @@ export const useStore = () => {
       setState(prev => ({ ...prev, protocolLogs }));
     }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/protocolLogs`));
 
+    // EnergyHistory listener
+    const unsubEnergy = onSnapshot(collection(db, 'users', userId, 'energyHistory'), (snap) => {
+      const energyHistory: EnergyCheckIn[] = [];
+      snap.forEach(doc => energyHistory.push(doc.data() as EnergyCheckIn));
+      // Sort by date descending
+      energyHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setState(prev => ({ ...prev, energyHistory }));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `users/${userId}/energyHistory`));
+
     return () => {
       unsubProfile();
       unsubProjects();
       unsubSessions();
       unsubCalendar();
       unsubProtocols();
+      unsubEnergy();
     };
   }, [currentUser]);
 
@@ -375,11 +424,19 @@ export const useStore = () => {
       date: new Date().toISOString()
     };
     
-    // Only store locally as per new policy
-    setState(prev => ({
-      ...prev,
-      energyHistory: [checkIn, ...prev.energyHistory].slice(0, 50)
-    }));
+    if (currentUser) {
+      const path = `users/${currentUser.uid}/energyHistory/${checkIn.id}`;
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'energyHistory', checkIn.id), sanitizeForFirestore(checkIn));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    } else {
+      setState(prev => ({
+        ...prev,
+        energyHistory: [checkIn, ...prev.energyHistory].slice(0, 50)
+      }));
+    }
   };
 
   const addBlockStrategy = async (name: string, description: string, duration: number, energy_required: number = 3, simplicity: number = 3) => {
@@ -790,23 +847,30 @@ export const useStore = () => {
     // But since the state is updated locally, and projects are lists, we'll keep it as is.
   };
 
-  const consumeTickets = (amount: number = 1) => {
-    const newRemaining = Math.max(0, state.tickets.remaining - amount);
-    const newTotalUsed = state.tickets.totalUsed + amount;
+  const consumeTickets = (minutes: number = 1) => {
+    const newUsedMinutes = state.tickets.usedMinutesThisWeek + minutes;
+    const oldTicketsUsed = Math.floor(state.tickets.usedMinutesThisWeek / 5);
+    const newTicketsUsed = Math.floor(newUsedMinutes / 5);
+    
+    // If we crossed a 5-minute threshold, we used another ticket.
+    // However, user said "total 10 tickets". So total limit = 50 minutes.
+    const remaining = Math.max(0, 10 - Math.ceil(newUsedMinutes / 5));
 
     setState(prev => ({
       ...prev,
       tickets: {
         ...prev.tickets,
-        remaining: newRemaining,
-        totalUsed: newTotalUsed
+        usedMinutesThisWeek: newUsedMinutes,
+        remaining: remaining,
+        totalUsed: prev.tickets.totalUsed + (newTicketsUsed - oldTicketsUsed)
       }
     }));
     if (currentUser) {
        const path = `users/${currentUser.uid}/profiles/main`;
        updateDoc(doc(db, 'users', currentUser.uid, 'profiles', 'main'), sanitizeForFirestore({
-         'tickets.remaining': newRemaining,
-         'tickets.totalUsed': newTotalUsed
+         'tickets.usedMinutesThisWeek': newUsedMinutes,
+         'tickets.remaining': remaining,
+         'tickets.totalUsed': state.tickets.totalUsed + (newTicketsUsed - oldTicketsUsed)
        })).catch(err => handleFirestoreError(err, OperationType.WRITE, path));
     }
   };

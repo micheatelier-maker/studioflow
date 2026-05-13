@@ -440,10 +440,6 @@ const FlowSession: React.FC<FlowSessionProps> = ({
 
           <button 
             onClick={() => {
-              if (isMicEnabled && tickets <= 0) {
-                setError("Out of AI tickets. Upgrade to continue using Studio Ear.");
-                return;
-              }
               setError(null);
               setIsFlowActive(true);
             }}
@@ -494,18 +490,6 @@ const FlowSession: React.FC<FlowSessionProps> = ({
           >
             {formatTime(seconds)}
           </div>
-          {isMicEnabled && (
-            <div className={`flex items-center space-x-2 bg-purple-950/40 px-4 py-2 rounded-full border border-purple-800/40 transition-opacity duration-1000 ${isTimerRevealed ? 'opacity-100' : 'opacity-20'}`}>
-              <div className="flex space-x-1">
-                {Array.from({ length: ticketsBeingUsed }).map((_, i) => (
-                  <div key={i} className="w-2 h-2 bg-purple-500 rounded-sm rotate-45 animate-pulse" />
-                ))}
-              </div>
-              <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest">
-                {ticketsBeingUsed} {ticketsBeingUsed === 1 ? 'Ticket' : 'Tickets'} Used
-              </span>
-            </div>
-          )}
           <div className={`w-64 h-64 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-purple-900/20 transition-all duration-1000 pointer-events-none ${isMicEnabled && !isPaused ? 'animate-pulse scale-110 bg-purple-900/5' : 'scale-90'}`}></div>
         </div>
 

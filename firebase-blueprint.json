@@ -165,6 +165,17 @@
         "reflection": { "type": "string" },
         "reflectionType": { "type": "string", "enum": ["voice", "text"] }
       }
+    },
+    "EnergyCheckIn": {
+      "title": "Energy Check-In",
+      "description": "Studio vital updates and energy levels",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "level": { "type": "number" },
+        "note": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
@@ -191,6 +202,10 @@
     "/users/{userId}/protocolLogs/{logId}": {
       "schema": "ProtocolLog",
       "description": "Applied protocol records"
+    },
+    "/users/{userId}/energyHistory/{checkInId}": {
+      "schema": "EnergyCheckIn",
+      "description": "Studio vital logs"
     }
   }
 }

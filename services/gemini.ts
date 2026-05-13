@@ -9,7 +9,7 @@ export const extractLogFromAudio = async (
   mimeType: string, 
   type: LogType
 ): Promise<Partial<WorkshopLog>> => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   
   const typePrompts = {
     session: "Transcribe a workshop/studio session log for an existing or untitled project. Focus on highlights, breakthrough points, technical hurdles, and general session flow.",
@@ -87,7 +87,7 @@ export const processDeepDiveResponse = async (
   input: string | { base64: string, minType: string },
   question: string
 ): Promise<string> => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   const systemInstruction = `
     You are a studio assistant. The user is answering a deep-dive question: "${question}".
     Transcribe their response if it's audio, or clean it up if it's text.
@@ -119,7 +119,7 @@ export const refineNarrativeFromAudio = async (
   mimeType: string,
   currentDescription?: string
 ): Promise<string> => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   const systemInstruction = `
     You are a creative's archival assistant. 
     Transcribe the provided audio and merge it with the existing project description if provided.
@@ -150,7 +150,7 @@ export const refineNarrativeFromAudio = async (
 };
 
 export const summarizeSeed = async (base64Audio: string, mimeType: string): Promise<string | null> => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   const systemInstruction = `
     You are a flow-state companion.
     Listen to this 10-second snippet of an artist working. 
@@ -180,7 +180,7 @@ export const reprocessTranscript = async (
   transcript: string,
   type: LogType
 ): Promise<Partial<WorkshopLog>> => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   
   const typePrompts = {
     session: "Re-analyze this studio session transcript. Focus on extracting clearer highlights, breakthrough points, technical hurdles, and session flow.",
