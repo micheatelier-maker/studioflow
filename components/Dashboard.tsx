@@ -487,11 +487,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         {item.reminder_config && (
                           <span className="text-[7px] text-stone-700 font-black uppercase tracking-tighter opacity-60">
                             {item.reminder_config.type === 'advance' 
-                              ? item.reminder_config.advance_value === '10m' ? '10m' :
-                                item.reminder_config.advance_value === '30m' ? '30m' :
-                                item.reminder_config.advance_value === '1h' ? '1h' :
-                                item.reminder_config.advance_value === '2h' ? '2h' :
-                                item.reminder_config.advance_value === '1d' ? '1d' : item.reminder_config.advance_value
+                              ? (typeof item.reminder_config.advance_value === 'string' ? item.reminder_config.advance_value : String(item.reminder_config.advance_value || ''))
                               : `${new Date(item.reminder_config.specific_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ ${item.reminder_config.specific_time}`}
                           </span>
                         )}

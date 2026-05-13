@@ -308,11 +308,13 @@ const SwipeableEventCard: React.FC<{
                    {item.reminder_config && (
                      <span className="text-[8px] font-black text-stone-600 uppercase tracking-widest pr-2">
                        {item.reminder_config.type === 'advance' 
-                         ? item.reminder_config.advance_value === '10m' ? '10 mins advance' :
-                           item.reminder_config.advance_value === '30m' ? '30 mins advance' :
-                           item.reminder_config.advance_value === '1h' ? '1 hour advance' :
-                           item.reminder_config.advance_value === '2h' ? '2 hours advance' :
-                           item.reminder_config.advance_value === '1d' ? '1 day advance' : item.reminder_config.advance_value
+                         ? (typeof item.reminder_config.advance_value === 'string' 
+                            ? (item.reminder_config.advance_value === '10m' ? '10 mins advance' :
+                               item.reminder_config.advance_value === '30m' ? '30 mins advance' :
+                               item.reminder_config.advance_value === '1h' ? '1 hour advance' :
+                               item.reminder_config.advance_value === '2h' ? '2 hours advance' :
+                               item.reminder_config.advance_value === '1d' ? '1 day advance' : item.reminder_config.advance_value)
+                            : String(item.reminder_config.advance_value || ''))
                          : `${new Date(item.reminder_config.specific_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ ${item.reminder_config.specific_time}`}
                      </span>
                    )}

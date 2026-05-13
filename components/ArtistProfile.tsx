@@ -13,14 +13,14 @@ interface ArtistProfileProps {
 }
 
 const DISCIPLINES = [
-  { group: "Visual Arts", options: ["Abstract Impressionism", "Neo-Surrealism", "Figurative Oil Painting", "Risograph Printmaking", "Street Muralist", "Conceptual Photography"] },
-  { group: "Sonic Arts", options: ["Music Production", "Modular Synthesis", "Spatial Audio Design", "Foley & Sound Design", "Cyber-Folk Composition", "Experimental Ambient"] },
-  { group: "Healing & Wellness", options: ["Acupuncturist", "Holistic Nutritionist", "Reiki Practitioner", "Sound Healer", "Ayurvedic Consultant", "Somatic Therapist", "Transpersonal Guide"] },
-  { group: "Botanical & Nature", options: ["Botanist", "Ethnobotanist", "Floral Designer", "Permaculture Designer", "Horticulturalist", "Mycology Research", "Biophilic Designer"] },
-  { group: "Craft & Material", options: ["Studio Ceramics", "Clay & Fabric Dolls", "Jewelry Design", "Kinetic Metalwork", "Woodworking & Joinery", "Glassblowing", "Bio-Material Research"] },
-  { group: "Digital & Future", options: ["Generative AI Art", "Creative Coding", "VR World-building", "Voxel Architecture", "Interactive Installation", "3D Digital Sculpting"] },
-  { group: "Textiles & Fashion", options: ["Sustainable Textile Design", "Structural Weaving", "Avant-Garde Tailoring", "Bio-Looming", "Experimental Dyeing"] },
-  { group: "Interdisciplinary", options: ["Performance Art", "Social Practice", "Interactive Architecture", "Biomimicry Design", "Found Object Assemblage"] }
+  { group: "Visual Arts", options: ["Abstract Impressionism", "Neo-Surrealism", "Figurative Oil Painting", "Risograph Printmaking", "Street Muralist", "Conceptual Photography", "Sculptural Collage", "Contemporary Realism"] },
+  { group: "Sonic Arts", options: ["Music Production", "Modular Synthesis", "Spatial Audio Design", "Foley & Sound Design", "Cyber-Folk Composition", "Experimental Ambient", "Orchestral Scoring", "Digital Signal Processing"] },
+  { group: "Healing & Wellness", options: ["Acupuncturist", "Holistic Nutritionist", "Reiki Practitioner", "Sound Healer", "Ayurvedic Consultant", "Somatic Therapist", "Transpersonal Guide", "Breathwork Specialist", "Energy Worker", "Integrative Herbalist"] },
+  { group: "Botanical & Nature", options: ["Botanist", "Ethnobotanist", "Floral Designer", "Permaculture Designer", "Horticulturalist", "Mycology Research", "Biophilic Designer", "Urban Foraging Guide", "Micro-Gardener"] },
+  { group: "Craft & Material", options: ["Studio Ceramics", "Clay & Fabric Dolls", "Jewelry Design", "Kinetic Metalwork", "Woodworking & Joinery", "Glassblowing", "Bio-Material Research", "Tufting & Rug Design", "Paper Engineering"] },
+  { group: "Digital & Future", options: ["Generative AI Art", "Creative Coding", "VR World-building", "Voxel Architecture", "Interactive Installation", "3D Digital Sculpting", "UX Design Strategy", "Cybernetic Research"] },
+  { group: "Textiles & Fashion", options: ["Sustainable Textile Design", "Structural Weaving", "Avant-Garde Tailoring", "Bio-Looming", "Experimental Dyeing", "Knitwear Engineering", "Upcycled Couture"] },
+  { group: "Interdisciplinary", options: ["Performance Art", "Social Practice", "Interactive Architecture", "Biomimicry Design", "Found Object Assemblage", "Speculative Fiction", "Creative Non-Fiction"] }
 ];
 
 const CreativeDNA: React.FC<{ 
@@ -263,7 +263,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
 
   return (
     <div className="pt-8 pb-48 animate-in fade-in duration-1000">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-16 px-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 px-1 items-start">
         {/* Left Column: Identity */}
         <div className="lg:col-span-3 space-y-8">
           <section className="relative flex flex-col items-center pt-4 pb-0">
@@ -304,7 +304,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
             </div>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
-            <div className="mt-8 text-center space-y-2 w-full z-10">
+            <div className="mt-6 text-center space-y-1 w-full z-10">
               {isEditing ? (
                 <div className="space-y-3 w-full">
                   <input value={localProfile.stageName} onChange={(e) => setLocalProfile(p => ({ ...p, stageName: e.target.value }))} className={inputClasses + " text-center text-xl font-black"} placeholder="Stage Name" />
@@ -313,7 +313,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
               ) : (
                 <>
                   <h2 className="text-4xl font-black tracking-tighter text-stone-100">{profile.stageName}<span className="text-orange-600">.</span></h2>
-                  <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1">{profile.realName}</p>
+                  <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.4em] mt-0.5">{profile.realName}</p>
                 </>
               )}
             </div>
@@ -323,7 +323,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
         {/* Center Column: DNA & Tools */}
         <div className="lg:col-span-5 space-y-12">
           <section className="space-y-6">
-            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-2 lg:mt-0">
+            <div className="h-48 relative overflow-hidden opacity-80 lg:rounded-[2rem] lg:bg-stone-900/30 lg:border lg:border-stone-800/20 -mx-6 lg:mx-0 -mt-8 lg:mt-0 transition-all duration-700">
               <CreativeDNA 
                   disciplineColor={isEditing ? localProfile.disciplineColor : profile.disciplineColor} 
                   styleColor={isEditing ? localProfile.styleColor : profile.styleColor}
@@ -378,7 +378,11 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
             </div>
             <div className="bg-[#1a1715] rounded-[2.5rem] p-8 border border-stone-800/50 shadow-2xl">
                <div className="flex flex-wrap gap-2">
-                  {allTools.map((tool, i) => <span key={i} className="bg-stone-900 text-orange-500 text-[10px] font-black px-4 py-2.5 rounded-xl border border-orange-900/20">{tool}</span>)}
+                  {allTools.map((tool, i) => (
+                    <span key={i} className="bg-stone-900 text-orange-500 text-[10px] font-black px-4 py-2.5 rounded-xl border border-orange-900/20">
+                      {typeof tool === 'string' ? tool : String(tool)}
+                    </span>
+                  ))}
                   {allTools.length === 0 && <p className="text-stone-600 text-xs italic">Your kit is empty.</p>}
                </div>
             </div>
@@ -463,7 +467,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
                       <div className="space-y-2">
                         {(Array.isArray(localProfile.upcomingProjects) ? localProfile.upcomingProjects : []).map((proj, i) => (
                           <div key={i} className="flex items-center justify-between bg-stone-900/40 p-3 rounded-2xl border border-stone-800/40">
-                            <span className="text-stone-100 font-bold text-sm">{proj}</span>
+                            <span className="text-stone-100 font-bold text-sm">{typeof proj === 'string' ? proj : String(proj)}</span>
                             <button onClick={() => removeProjectThread(i)} className="text-rose-500">×</button>
                           </div>
                         ))}
