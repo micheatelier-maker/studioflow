@@ -3,7 +3,18 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+const config = {
+  ...firebaseConfig,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || (firebaseConfig.apiKey === 'VITE_FIREBASE_API_KEY_PLACEHOLDER' ? '' : firebaseConfig.apiKey)
+};
+
+if (!config.apiKey) {
+  const errorMsg = "Firebase API Key is missing or invalid. Please add VITE_FIREBASE_API_KEY to your Secrets in the Settings menu.";
+  console.error(errorMsg);
+  // Optional: You could throw here, but we'll try to let initializing go as far as it can
+}
+
+const app = initializeApp(config);
 export const db = (firebaseConfig as any).firestoreDatabaseId 
   ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
   : getFirestore(app);

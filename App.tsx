@@ -38,6 +38,10 @@ const App: React.FC = () => {
   const schedulePageRef = useRef<{ openAddForm: () => void } | null>(null);
 
   const activeProjects = state.projects.filter(p => !p.is_archived);
+
+  // Check for missing API keys
+  const isGeminiKeyMissing = !process.env.GEMINI_API_KEY;
+  const isFirebaseKeyMissing = !import.meta.env.VITE_FIREBASE_API_KEY;
   
   if (activeTab === 'projects' && !activeProjectInView && activeProjects.length > 0) {
     setActiveProjectInView(activeProjects[0].id);
@@ -131,6 +135,23 @@ const App: React.FC = () => {
           onLogClick={() => setShowTypePicker(true)}
           hideNav={isFlowRunning}
         >
+          {(isGeminiKeyMissing || isFirebaseKeyMissing) && !isFlowRunning && (
+            <div className="mx-4 mt-6 p-4 bg-orange-950/20 border border-orange-900/40 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top duration-500">
+              <div className="flex items-center space-x-3">
+                <div className="bg-orange-600/20 p-2 rounded-xl">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-200">System Setup Incomplete</p>
+                  <p className="text-[9px] text-orange-500/80 font-bold">API keys are missing. AI features and cloud storage may be disabled.</p>
+                </div>
+              </div>
+              <p className="text-[8px] font-black uppercase tracking-widest text-orange-400/60 bg-orange-950/40 px-2 py-1 rounded-md border border-orange-900/30">
+                Go to Settings &gt; Secrets
+              </p>
+            </div>
+          )}
+
           {activeTab === 'home' && (
             <Dashboard 
               state={state} 
@@ -157,8 +178,8 @@ const App: React.FC = () => {
           )}
           
           {activeTab === 'projects' && (
-            <div className="pt-10 space-y-8 animate-in slide-in-from-right duration-500">
-               <div className="flex justify-between items-end px-1">
+            <div className="pt-10 space-y-8 lg:h-[calc(100vh-40px)] lg:flex lg:flex-col lg:overflow-hidden animate-in slide-in-from-right duration-500">
+               <div className="flex justify-between items-end px-1 shrink-0">
                 <div>
                   <h1 className="text-4xl font-black tracking-tighter">Projects</h1>
                   <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1 ml-1 opacity-60">Archive rotation</p>
@@ -175,9 +196,9 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative mt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 lg:items-start">
-                 <div className="lg:sticky lg:top-10 space-y-4">
-                   <div className="lg:hidden">
+              <div className="relative mt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 lg:items-start lg:flex-1 lg:overflow-hidden pb-10">
+                 <div className="lg:sticky lg:top-0 space-y-4">
+                   <div className="lg:hidden text-left">
                      <Reorder.Group 
                        axis="x" 
                        values={activeProjects} 
@@ -246,7 +267,7 @@ const App: React.FC = () => {
                    </div>
                  </div>
 
-                 <div className="relative z-0 min-w-0">
+                 <div className="relative z-0 min-w-0 lg:h-full lg:overflow-y-auto lg:pr-4 lg:pb-32 lg:no-scrollbar">
                     {activeProjects.map(project => (
                       activeProjectInView === project.id && (
                         editingProject?.id === project.id ? (

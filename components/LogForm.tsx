@@ -99,8 +99,19 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64 = (reader.result as string).split(',')[1];
-          const refined = await processDeepDiveResponse({ base64, minType: mimeType }, currentQuestion.question);
-          updateStepData(refined);
+          try {
+            const refined = await processDeepDiveResponse({ base64, minType: mimeType }, currentQuestion.question);
+            updateStepData(refined);
+          } catch (err: any) {
+            console.error("Deep dive step failed:", err);
+            if (err.message?.includes("API_KEY_ISSUE")) {
+              alert(err.message.replace("API_KEY_ISSUE: ", ""));
+              setIsProcessingStep(false);
+            } else {
+              // Fallback to raw/manual if Gemini fails but not because of API key
+              updateStepData("[AI Refinement Failed]");
+            }
+          }
         };
       };
       mediaRecorder.start();
@@ -133,8 +144,18 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
 
   const handleManualSubmit = async () => {
     setIsProcessingStep(true);
-    const refined = await processDeepDiveResponse(manualInput, currentQuestion.question);
-    updateStepData(refined);
+    try {
+      const refined = await processDeepDiveResponse(manualInput, currentQuestion.question);
+      updateStepData(refined);
+    } catch (err: any) {
+      console.error("Manual refinement failed:", err);
+      if (err.message?.includes("API_KEY_ISSUE")) {
+        alert(err.message.replace("API_KEY_ISSUE: ", ""));
+        setIsProcessingStep(false);
+      } else {
+        updateStepData(manualInput);
+      }
+    }
   };
 
   const handleReprocess = async () => {
@@ -155,9 +176,13 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
         });
         return next;
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Reprocess failed:", error);
-      alert("Failed to reprocess transcript. Please try again.");
+      if (error.message?.includes("API_KEY_ISSUE")) {
+        alert(error.message.replace("API_KEY_ISSUE: ", ""));
+      } else {
+        alert("Failed to reprocess transcript. Please try again.");
+      }
     } finally {
       setIsReprocessing(false);
     }

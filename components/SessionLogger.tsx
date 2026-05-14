@@ -171,17 +171,21 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({
                 actual_duration_minutes: finalMinutes,
                 audio_base64: null // Discard as per user request
               });
-            } catch (err) {
+            } catch (err: any) {
               console.error("Gemini Extraction Error:", err);
-              setError("Studio Ear failed to transcribe. Saving manual fallback.");
-              onComplete({
-                type,
-                project_id: selectedProjectId === 'new' ? '' : selectedProjectId || '',
-                actual_duration_minutes: finalMinutes,
-                date: new Date().toISOString(),
-                raw_transcript: '[Transcription Failed]',
-                materials_used: []
-              });
+              if (err.message?.includes("API_KEY_ISSUE")) {
+                setError(err.message.replace("API_KEY_ISSUE: ", ""));
+              } else {
+                setError("Studio Ear failed to transcribe. Saving manual fallback.");
+                onComplete({
+                  type,
+                  project_id: selectedProjectId === 'new' ? '' : selectedProjectId || '',
+                  actual_duration_minutes: finalMinutes,
+                  date: new Date().toISOString(),
+                  raw_transcript: '[Transcription Failed]',
+                  materials_used: []
+                });
+              }
             } finally {
               setIsProcessing(false);
             }

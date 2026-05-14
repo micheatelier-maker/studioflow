@@ -273,16 +273,20 @@ const FlowSession: React.FC<FlowSessionProps> = ({
               duration_minutes: targetDuration,
               actual_duration_minutes: finalMinutes
             });
-          } catch (err) {
+          } catch (err: any) {
             console.error("Failed to process flow session", err);
-            onSessionComplete({
-              type: sessionType,
-              project_id: selectedProjectId,
-              duration_minutes: targetDuration,
-              actual_duration_minutes: finalMinutes,
-              date: new Date().toISOString(),
-              raw_transcript: '[Transcription Failed]'
-            } as any);
+            if (err.message?.includes("API_KEY_ISSUE")) {
+              setError(err.message.replace("API_KEY_ISSUE: ", ""));
+            } else {
+              onSessionComplete({
+                type: sessionType,
+                project_id: selectedProjectId,
+                duration_minutes: targetDuration,
+                actual_duration_minutes: finalMinutes,
+                date: new Date().toISOString(),
+                raw_transcript: '[Transcription Failed]'
+              } as any);
+            }
           } finally {
             setIsProcessing(false);
           }

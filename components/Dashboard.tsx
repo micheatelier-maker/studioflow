@@ -299,119 +299,129 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
       
       <div className="space-y-6">
-        {Array.isArray(recentLogs) && recentLogs.map((log, index) => (
-          <div key={log.id} className="relative">
-            {/* Connection line to Dig Deeper card */}
-            <div className="absolute left-10 top-full w-px h-6 bg-gradient-to-b from-orange-900/60 to-orange-900/10 z-0"></div>
-            
-            <div 
-              onClick={() => setExpandedRippleId(expandedRippleId === log.id ? null : log.id)}
-              className={`w-full bg-[#1a1715]/40 border rounded-[2.5rem] p-7 transition-all duration-500 text-left flex flex-col group cursor-pointer active:scale-[0.99] relative z-10 ${expandedRippleId === log.id ? 'border-orange-900/40 ring-1 ring-orange-900/20 shadow-2xl shadow-orange-950/20' : 'border-stone-800/20 hover:border-orange-900/30'}`}
-            >
-              <div className="space-y-2 w-full relative">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] text-stone-600 font-black uppercase tracking-[0.2em] mb-1">
-                      {new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ {new Date(log.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <h4 className="text-stone-200 font-bold text-base tracking-tight leading-tight group-hover:text-orange-400 transition-colors pr-4 line-clamp-1">
-                      {log.summary || log.how_it_went || log.wins || "Studio Session"}
-                    </h4>
-                  </div>
-                  <div className="flex flex-col items-end space-y-1">
-                    <span className="text-[8px] text-stone-600 font-black tabular-nums flex-shrink-0">
-                      {(() => {
-                        const mins = log.actual_duration_minutes || log.duration_minutes || 0;
-                        const h = Math.floor(mins / 60);
-                        const m = mins % 60;
-                        return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
+        {Array.isArray(recentLogs) && recentLogs.length > 0 ? (
+          recentLogs.map((log) => (
+            <div key={log.id} className="space-y-6 relative">
+              <div className="relative">
+                {/* Connection line to Dig Deeper card */}
+                <div className="absolute left-10 top-full w-px h-6 bg-gradient-to-b from-orange-900/60 to-orange-900/10 z-0"></div>
                 
-                {expandedRippleId !== log.id && (
-                  <div className="mt-4 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300">
-                    <div className="flex items-center space-x-2">
-                       <div className="w-1.5 h-1.5 rounded-full bg-orange-600/60 flex-shrink-0 animate-pulse"></div>
-                       <p className="text-stone-500 text-[10px] font-medium italic opacity-90 pr-2 line-clamp-1">
-                         {log.wins || log.summary || "Deep creative flow recorded."}
-                       </p>
+                <div 
+                  onClick={() => setExpandedRippleId(expandedRippleId === log.id ? null : log.id)}
+                  className={`w-full bg-[#1a1715]/40 border rounded-[2.5rem] p-7 transition-all duration-500 text-left flex flex-col group cursor-pointer active:scale-[0.99] relative z-10 ${expandedRippleId === log.id ? 'border-orange-900/40 ring-1 ring-orange-900/20 shadow-2xl shadow-orange-950/20' : 'border-stone-800/20 hover:border-orange-900/30'}`}
+                >
+                  <div className="space-y-2 w-full relative">
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-stone-600 font-black uppercase tracking-[0.2em] mb-1">
+                          {new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ {new Date(log.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <h4 className="text-stone-200 font-bold text-base tracking-tight leading-tight group-hover:text-orange-400 transition-colors pr-4 line-clamp-1">
+                          {log.summary || log.how_it_went || log.wins || "Studio Session"}
+                        </h4>
+                      </div>
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className="text-[8px] text-stone-600 font-black tabular-nums flex-shrink-0">
+                          {(() => {
+                            const mins = log.actual_duration_minutes || log.duration_minutes || 0;
+                            const h = Math.floor(mins / 60);
+                            const m = mins % 60;
+                            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                          })()}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[8px] text-orange-900 font-black uppercase tracking-widest whitespace-nowrap">View Log</span>
+                    
+                    {expandedRippleId !== log.id && (
+                      <div className="mt-4 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300">
+                        <div className="flex items-center space-x-2">
+                           <div className="w-1.5 h-1.5 rounded-full bg-orange-600/60 flex-shrink-0 animate-pulse"></div>
+                           <p className="text-stone-500 text-[10px] font-medium italic opacity-90 pr-2 line-clamp-1">
+                             {log.wins || log.summary || "Deep creative flow recorded."}
+                           </p>
+                        </div>
+                        <span className="text-[8px] text-orange-900 font-black uppercase tracking-widest whitespace-nowrap">View Log</span>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  { expandedRippleId === log.id && (
+                    <div className="mt-6 pt-6 border-t border-stone-800/40 space-y-5 animate-in slide-in-from-top-2 duration-300 w-full">
+                      <div className="grid grid-cols-2 gap-6">
+                        {log.wins && (
+                          <div>
+                            <span className="text-[8px] font-black uppercase text-orange-600 tracking-widest block mb-1.5">Highlights</span>
+                            <p className="text-stone-200 text-[11px] leading-relaxed font-bold">{log.wins}</p>
+                          </div>
+                        )}
+                        {log.challenges && (
+                          <div>
+                            <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Low Lights</span>
+                            <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.challenges}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        {log.next_steps && (
+                          <div>
+                            <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Next Steps</span>
+                            <p className="text-stone-400 text-[11px] leading-relaxed">{log.next_steps}</p>
+                          </div>
+                        )}
+                        {log.project_name && (
+                          <div>
+                            <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Project</span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-1 h-1 rounded-full bg-orange-600"></div>
+                              <p className="text-stone-300 text-[10px] font-black uppercase tracking-wider">{log.project_name}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDeepDiveClick?.(log); }}
+                        className="w-full py-3 bg-stone-900/80 hover:bg-stone-800 text-stone-400 hover:text-stone-200 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border border-stone-800/60 transition-all text-center"
+                      >
+                        Open Full Log Entry
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              { expandedRippleId === log.id && (
-                <div className="mt-6 pt-6 border-t border-stone-800/40 space-y-5 animate-in slide-in-from-top-2 duration-300 w-full">
-                  <div className="grid grid-cols-2 gap-6">
-                    {log.wins && (
-                      <div>
-                        <span className="text-[8px] font-black uppercase text-orange-600 tracking-widest block mb-1.5">Highlights</span>
-                        <p className="text-stone-200 text-[11px] leading-relaxed font-bold">{log.wins}</p>
-                      </div>
-                    )}
-                    {log.challenges && (
-                      <div>
-                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Low Lights</span>
-                        <p className="text-stone-400 text-[11px] leading-relaxed italic">{log.challenges}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    {log.next_steps && (
-                      <div>
-                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Next Steps</span>
-                        <p className="text-stone-400 text-[11px] leading-relaxed">{log.next_steps}</p>
-                      </div>
-                    )}
-                    {log.project_name && (
-                      <div>
-                        <span className="text-[8px] font-black uppercase text-stone-600 tracking-widest block mb-1.5">Project</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-1 h-1 rounded-full bg-orange-600"></div>
-                          <p className="text-stone-300 text-[10px] font-black uppercase tracking-wider">{log.project_name}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDeepDiveClick?.(log); }}
-                    className="w-full py-3 bg-stone-900/80 hover:bg-stone-800 text-stone-400 hover:text-stone-200 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border border-stone-800/60 transition-all text-center"
-                  >
-                    Open Full Log Entry
-                  </button>
+              {/* Dig Deeper Question Card - Nested to connect to log */}
+              <div 
+                onClick={() => onDigDeeperClick()}
+                className="bg-orange-950/10 border border-orange-900/20 rounded-[2.5rem] p-8 space-y-6 active:scale-[0.99] transition-all cursor-pointer group hover:bg-orange-950/20 relative z-10"
+              >
+                <div className="space-y-1">
+                   <span className="text-orange-500 text-[8px] font-black uppercase tracking-[0.3em]">Dig Deeper</span>
+                   <h3 className="text-stone-100 text-lg font-black tracking-tight leading-tight group-hover:text-orange-400 transition-colors">
+                     {randomDeepDiveQuestion?.question}
+                   </h3>
                 </div>
-              )}
+                <div className="flex items-center space-x-3 text-stone-600 group-hover:text-stone-400">
+                   <div className="p-2 bg-stone-900/40 rounded-xl">
+                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                   </div>
+                   <span className="text-[9px] font-black uppercase tracking-widest">Write Reflection</span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-
-        {/* Dig Deeper Question Card */}
-        <div 
-          onClick={() => onDigDeeperClick()}
-          className="bg-orange-950/10 border border-orange-900/20 rounded-[2.5rem] p-8 space-y-6 active:scale-[0.99] transition-all cursor-pointer group hover:bg-orange-950/20"
-        >
-          <div className="space-y-1">
-             <span className="text-orange-500 text-[8px] font-black uppercase tracking-[0.3em]">Dig Deeper</span>
-             <h3 className="text-stone-100 text-lg font-black tracking-tight leading-tight group-hover:text-orange-400 transition-colors">
-               {randomDeepDiveQuestion?.question}
-             </h3>
-          </div>
-          <div className="flex items-center space-x-3 text-stone-600 group-hover:text-stone-400">
-             <div className="p-2 bg-stone-900/40 rounded-xl">
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-             </div>
-             <span className="text-[9px] font-black uppercase tracking-widest">Write Reflection</span>
-          </div>
-        </div>
-
-        {recentLogs.length === 0 && !state.projects.length && (
-          <div className="py-12 text-center border-2 border-dashed border-stone-900/40 rounded-[2.5rem] bg-stone-900/10">
-            <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.3em]">No creative ripples detected</p>
+          ))
+        ) : (
+          <div className="space-y-4">
+            <div className="py-12 text-center border-2 border-dashed border-stone-900/40 rounded-[2.5rem] bg-stone-900/10 space-y-4">
+              <p className="text-stone-700 text-[9px] uppercase font-black tracking-[0.3em]">No creative ripples detected</p>
+              <button 
+                onClick={onLogClick}
+                className="px-8 py-3 bg-orange-900/20 border border-orange-900/20 rounded-full text-orange-500 text-[9px] font-black uppercase tracking-widest hover:bg-orange-900 transition-all"
+              >
+                Start Your First Session
+              </button>
+            </div>
           </div>
         )}
       </div>
