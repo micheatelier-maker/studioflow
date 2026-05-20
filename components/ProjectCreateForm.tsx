@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Project, ProjectStatus, ProjectPhase } from '../types';
 import { refineNarrativeFromAudio } from '../services/gemini';
-import { RainbowPicker } from './RainbowPicker';
+import { SpectrumPicker } from './SpectrumPicker';
 import { useStore } from '../store/useStore';
 
 const PRESET_COLORS = [
@@ -35,7 +35,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
 }) => {
   const { addRecording } = useStore();
   const getInitialPhases = (): ProjectPhase[] => {
-    if (initialData?.phases && initialData.phases.length > 0) return initialData.phases;
+    if (initialData?.phases && Array.isArray(initialData.phases) && initialData.phases.length > 0) return initialData.phases;
     
     const now = new Date();
     return [
@@ -48,8 +48,10 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
       'completion'
     ].map((title, index) => {
       const startDate = new Date(now);
-      startDate.setDate(startDate.getDate() + (index * 14));
+      // Each phase starts 1 week (7 days) after the previous, ensuring a 1-week overlap
+      startDate.setDate(startDate.getDate() + (index * 7));
       const endDate = new Date(startDate);
+      // Each phase lasts exactly 2 weeks (14 days)
       endDate.setDate(endDate.getDate() + 14);
       
       return {
@@ -66,9 +68,17 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
   const [description, setDescription] = useState(initialData?.description || '');
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Active');
   const [category, setCategory] = useState(initialData?.category || '');
-  const [tools, setTools] = useState<string[]>(initialData?.tools_and_materials || []);
+  const [tools, setTools] = useState<string[]>(() => {
+    if (initialData?.tools_and_materials && Array.isArray(initialData.tools_and_materials)) {
+      return initialData.tools_and_materials;
+    }
+    return [];
+  });
   const [color, setColor] = useState(initialData?.color || PRESET_COLORS[0]);
-  const [phases, setPhases] = useState<ProjectPhase[]>(getInitialPhases());
+  const [phases, setPhases] = useState<ProjectPhase[]>(() => {
+    const initial = getInitialPhases();
+    return Array.isArray(initial) ? initial : [];
+  });
   const [newTool, setNewTool] = useState('');
   
   const [isRecording, setIsRecording] = useState(false);
@@ -197,12 +207,12 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
   const labelClasses = "block text-stone-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2.5 ml-1";
 
   const containerClasses = isInline 
-    ? "bg-[#14110f] w-full rounded-[3rem] p-8 pb-32 space-y-8 shadow-2xl border border-stone-800/40 relative"
-    : "fixed inset-0 bg-stone-950/90 backdrop-blur-xl z-[160] flex items-end safe-area-bottom";
+    ? "bg-[#14110f] w-full rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-12 pb-32 space-y-8 shadow-2xl border border-stone-800/40 relative lg:min-h-[850px] lg:mb-20"
+    : "fixed inset-0 bg-stone-950/90 backdrop-blur-xl z-[160] flex items-end lg:items-center lg:justify-center safe-area-bottom";
 
   const innerClasses = isInline
     ? "space-y-8"
-    : "bg-[#14110f] w-full rounded-t-[3rem] p-8 pb-14 space-y-8 animate-in slide-in-from-bottom duration-500 shadow-[0_-20px_50px_rgba(0,0,0,0.8)] border-t border-stone-800/40 max-h-[90vh] overflow-y-auto no-scrollbar relative";
+    : "bg-[#14110f] w-full lg:w-[65vw] lg:max-w-[65vw] rounded-t-[3rem] lg:rounded-[4rem] p-8 lg:p-14 pb-14 space-y-8 animate-in slide-in-from-bottom duration-500 shadow-[0_-20px_50px_rgba(0,0,0,0.8)] lg:shadow-2xl border-t lg:border border-stone-800/40 max-h-[90vh] lg:max-h-[85vh] overflow-y-auto no-scrollbar relative";
 
   return (
     <div className={containerClasses}>
@@ -272,8 +282,8 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
 
           <div>
             <label className={labelClasses}>Project Visualization Color</label>
-            <div className="p-6 bg-[#1a1715] rounded-[2.5rem] border border-stone-800/60 shadow-inner">
-              <RainbowPicker 
+            <div className="p-8 bg-[#1a1715] rounded-[2.5rem] border border-stone-800/60 shadow-inner">
+              <SpectrumPicker 
                 label="Spectrum Selector" 
                 color={color} 
                 onChange={setColor} 
@@ -300,13 +310,13 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
                 </button>
              </div>
              <div className="flex flex-wrap gap-2">
-                {tools.map((tool, i) => (
+                {(Array.isArray(tools) ? tools : []).map((tool, i) => (
                   <span key={i} className="bg-stone-900 text-stone-400 text-[10px] font-black px-3 py-2 rounded-xl border border-stone-800 flex items-center space-x-2">
                     <span>{tool}</span>
                     <button onClick={() => removeTool(i)} className="text-stone-600 hover:text-rose-500">×</button>
                   </span>
                 ))}
-                {tools.length === 0 && <p className="text-stone-700 text-[10px] font-medium italic ml-1">No tools listed.</p>}
+                {(!Array.isArray(tools) || tools.length === 0) && <p className="text-stone-700 text-[10px] font-medium italic ml-1">No tools listed.</p>}
              </div>
           </div>
 
@@ -314,7 +324,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({
           <div className="space-y-4 pt-4 border-t border-stone-800/40">
             <label className={labelClasses}>PROJECT PHASES</label>
             <div className="space-y-4">
-              {phases.map((phase) => (
+              {(Array.isArray(phases) ? phases : []).map((phase) => (
                 <div key={phase.id} className="bg-stone-900/40 p-5 rounded-3xl border border-stone-800/60 space-y-4 relative">
                   <button 
                     onClick={() => removePhase(phase.id)} 

@@ -187,6 +187,10 @@
       "schema": "Project",
       "description": "Creative projects"
     },
+    "/users/{userId}/projects/{projectId}/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Timed session logs for specific project"
+    },
     "/users/{userId}/sessions/{sessionId}": {
       "schema": "Session",
       "description": "Timed session logs"

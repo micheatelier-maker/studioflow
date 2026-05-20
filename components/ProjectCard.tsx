@@ -131,7 +131,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   return (
-    <div className={`bg-[#1a1715] rounded-b-[2.5rem] rounded-tr-none border border-stone-800/50 transition-all duration-500 overflow-hidden handcrafted-shadow relative`}>
+    <div className={`bg-[#1a1715] rounded-b-[2.5rem] rounded-tr-none lg:rounded-[4rem] border border-stone-800/50 transition-all duration-500 overflow-hidden handcrafted-shadow relative lg:min-h-[850px] lg:flex lg:flex-col lg:mb-20`}>
       {/* Overdue Phase Notification */}
       {overduePhase && (
         <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-500">
@@ -174,7 +174,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       )}
 
-      <div className="p-8 space-y-10">
+      <div className="p-8 lg:p-12 space-y-10 lg:space-y-14 flex-1 flex flex-col">
         {/* Project Header - Always Full Width */}
         <header className="flex justify-between items-start relative">
           <div className="space-y-2 flex-1">
@@ -220,7 +220,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         </header>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start space-y-10 lg:space-y-0">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start space-y-10 lg:space-y-0 flex-1">
           {/* Left Column: Vision & Progress */}
           <div className="space-y-10">
             {/* Project Intent Section (Locked Style) */}
@@ -350,7 +350,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             )}
 
             {/* Studio Kit Section (Locked Style) */}
-            <div className="space-y-4">
+            <div className="space-y-4 pb-12">
               <label className="text-stone-600 text-[9px] font-black uppercase tracking-[0.3em]">Studio Kit</label>
               <div className="flex flex-wrap gap-2">
                 {(Array.isArray(project.tools_and_materials) ? project.tools_and_materials : []).map((tool, i) => (
@@ -361,34 +361,35 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {(!Array.isArray(project.tools_and_materials) || project.tools_and_materials.length === 0) && <span className="text-stone-700 text-xs italic">No materials specified.</span>}
               </div>
             </div>
-
-            {/* Archive Action */}
-            <div className="pt-2 flex justify-start">
-               <button 
-                onClick={() => setIsArchiving(true)}
-                className="text-stone-700 hover:text-rose-900 font-black text-[9px] uppercase tracking-widest transition-colors flex items-center space-x-2"
-               >
-                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                 <span>Vault this project arc</span>
-               </button>
-            </div>
-
-            {/* Footer Actions */}
-            <footer className="pt-4 flex flex-col space-y-3">
-               <button 
-                onClick={() => onNewLog(project)}
-                className="w-full bg-orange-800 py-5 rounded-[2.5rem] border border-orange-700 text-stone-100 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl shadow-orange-950/40"
-               >
-                 Log Session
-               </button>
-               <button 
-                onClick={() => onViewLedger(project)}
-                className="w-full bg-stone-900 py-5 rounded-[2.5rem] border border-stone-800 text-stone-400 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg"
-               >
-                 Session Ledger
-               </button>
-            </footer>
           </div>
+        </div>
+
+        {/* Universal Footer Actions */}
+        <div className="mt-auto space-y-6 pt-10 border-t border-stone-800/30">
+          <div className="flex justify-start">
+             <button 
+              onClick={() => setIsArchiving(true)}
+              className="text-stone-700 hover:text-rose-900 font-black text-[9px] uppercase tracking-widest transition-colors flex items-center space-x-2"
+             >
+               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+               <span>Vault this project arc</span>
+             </button>
+          </div>
+
+          <footer className="flex flex-col md:flex-row md:space-x-4 md:space-y-0 space-y-3">
+             <button 
+              onClick={() => onNewLog(project)}
+              className="flex-1 bg-orange-800 py-5 rounded-[2.5rem] border border-orange-700 text-stone-100 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl shadow-orange-950/40"
+             >
+               Log Session
+             </button>
+             <button 
+              onClick={() => onViewLedger(project)}
+              className="flex-1 bg-stone-900 py-5 rounded-[2.5rem] border border-stone-800 text-stone-400 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg"
+             >
+               Session Ledger
+             </button>
+          </footer>
         </div>
       </div>
     </div>

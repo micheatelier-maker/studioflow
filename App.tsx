@@ -178,7 +178,7 @@ const App: React.FC = () => {
           )}
           
           {activeTab === 'projects' && (
-            <div className="pt-10 space-y-8 lg:h-[calc(100vh-40px)] lg:flex lg:flex-col lg:overflow-hidden animate-in slide-in-from-right duration-500">
+            <div className="pt-10 space-y-8 animate-in slide-in-from-right duration-500">
                <div className="flex justify-between items-end px-1 shrink-0">
                 <div>
                   <h1 className="text-4xl font-black tracking-tighter">Projects</h1>
@@ -196,8 +196,8 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative mt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 lg:items-start lg:flex-1 lg:overflow-hidden pb-10">
-                 <div className="lg:sticky lg:top-0 space-y-4">
+              <div className="relative mt-8 lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 lg:items-start pb-32">
+                 <div className="lg:sticky lg:top-10 space-y-4">
                    <div className="lg:hidden text-left">
                      <Reorder.Group 
                        axis="x" 
@@ -267,7 +267,7 @@ const App: React.FC = () => {
                    </div>
                  </div>
 
-                 <div className="relative z-0 min-w-0 lg:h-full lg:overflow-y-auto lg:pr-4 lg:pb-32 lg:no-scrollbar">
+                 <div className="relative z-0 min-w-0">
                     {activeProjects.map(project => (
                       activeProjectInView === project.id && (
                         editingProject?.id === project.id ? (

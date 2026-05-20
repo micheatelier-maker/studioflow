@@ -36,6 +36,7 @@ export interface WorkshopLog {
   raw_transcript: string;
   audio_base64?: string | null; // For downloading voice memos
   audio_recording_id?: string | null;
+  save_as_commitment?: boolean;
 }
 
 export interface ProjectInsight {

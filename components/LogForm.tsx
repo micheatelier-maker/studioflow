@@ -29,6 +29,9 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
   const initialProjectName = initialData.project_name || 
     projects.find(p => p.id === initialProjectId)?.name || '';
 
+  const isAIGenerated = initialData.raw_transcript && initialData.raw_transcript !== '[Manual Entry]';
+  const defaultEmpty = (val: string | undefined) => (isFreshSession && isAIGenerated && !val) ? 'none detected.' : (val || '');
+
   const [formData, setFormData] = useState({
     type,
     project_id: initialProjectId,
@@ -39,21 +42,22 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
     actual_duration_minutes: initialData.actual_duration_minutes || 0,
     materials_used: initialData.materials_used || [],
     stage: initialData.stage || 'ideation' as Stage,
-    summary: initialData.summary || '',
-    how_it_went: initialData.how_it_went || '',
-    general_thoughts: initialData.general_thoughts || '',
-    problem: initialData.problem || '',
-    solution: initialData.solution || '',
-    post_hook: initialData.post_hook || '',
-    post_caption: initialData.post_caption || '',
-    post_body: initialData.post_body || '',
-    challenges: initialData.challenges || '',
-    wins: initialData.wins || '',
+    summary: defaultEmpty(initialData.summary),
+    how_it_went: defaultEmpty(initialData.how_it_went),
+    general_thoughts: defaultEmpty(initialData.general_thoughts),
+    problem: defaultEmpty(initialData.problem),
+    solution: defaultEmpty(initialData.solution),
+    post_hook: defaultEmpty(initialData.post_hook),
+    post_caption: defaultEmpty(initialData.post_caption),
+    post_body: defaultEmpty(initialData.post_body),
+    challenges: defaultEmpty(initialData.challenges),
+    wins: defaultEmpty(initialData.wins),
     mood: initialData.mood || '',
     energy_level: initialData.energy_level || latestEnergyLevel || 0, // Fallback to latest energy level
-    next_steps: initialData.next_steps || '',
+    next_steps: defaultEmpty(initialData.next_steps),
     raw_transcript: initialData.raw_transcript || '',
     audio_base64: initialData.audio_base64 || null,
+    save_as_commitment: initialData.save_as_commitment !== false,
   });
 
   const [isDiggingDeeper, setIsDiggingDeeper] = useState(startWithDeepDive);
@@ -73,10 +77,12 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
 
   const missingFields = useMemo(() => {
     const missing = [];
+    const isEmpty = (val: string) => !val || val === 'none detected.';
+    
     if (!formData.project_name && !formData.project_id) missing.push("Project Name");
-    if (type === 'session' && !formData.how_it_went) missing.push("Flow Status");
-    if (type === 'session' && !formData.wins) missing.push("Highlight");
-    if (type === 'session' && !formData.challenges) missing.push("Lowlight");
+    if (type === 'session' && isEmpty(formData.how_it_went)) missing.push("Flow Status");
+    if (type === 'session' && isEmpty(formData.wins)) missing.push("Highlight");
+    if (type === 'session' && isEmpty(formData.challenges)) missing.push("Lowlight");
     return missing;
   }, [formData, type]);
 
@@ -328,16 +334,20 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
                        <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em]">Deep Dive Available</h4>
-                      <p className="text-stone-300 font-bold text-base tracking-tight leading-tight mt-1">Shall we dig deeper into this session?</p>
+                      <h4 className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em]">Deep Dive Suggested</h4>
+                      <p className="text-stone-300 font-bold text-base tracking-tight leading-tight mt-1">
+                        {missingFields.length > 0 
+                          ? "Some sections weren't detected. Shall we dig deeper?" 
+                          : "Shall we dig deeper into this session?"}
+                      </p>
                     </div>
                  </div>
-                 <p className="text-stone-500 text-xs italic leading-relaxed font-medium">Capture how it felt, your highlights, lowlights, and tangential reflections.</p>
+                 <p className="text-stone-500 text-xs italic leading-relaxed font-medium">Use the Deep Dive to extract specifics about your flow, highlights, and tangential reflections.</p>
                  <button 
                   onClick={() => setIsDiggingDeeper(true)}
                   className="w-full py-4 bg-orange-800 text-stone-100 font-black uppercase tracking-[0.3em] text-[10px] rounded-2xl border border-orange-700 shadow-xl shadow-orange-950/30 active:scale-95 transition-all"
                  >
-                   Dig Deeper Now
+                   Start Deep Dive Now
                  </button>
               </div>
             ) : (
@@ -466,9 +476,23 @@ const LogForm: React.FC<LogFormProps> = ({ initialData, projects, onSave, onCanc
           </div>
 
           {formData.next_steps && (
-            <div>
-              <label className={labelClasses}>Immediate Future</label>
-              <textarea value={formData.next_steps} onChange={(e) => setFormData(p => ({ ...p, next_steps: e.target.value }))} className={inputClasses + " h-28 resize-none"} />
+            <div className="space-y-4">
+              <div>
+                <label className={labelClasses}>Immediate Future</label>
+                <textarea value={formData.next_steps} onChange={(e) => setFormData(p => ({ ...p, next_steps: e.target.value }))} className={inputClasses + " h-28 resize-none"} />
+              </div>
+              <div className="flex items-center space-x-3 p-4 bg-stone-900/40 rounded-2xl border border-stone-800/40">
+                <input 
+                  type="checkbox" 
+                  checked={formData.save_as_commitment !== false} 
+                  onChange={e => setFormData(prev => ({ ...prev, save_as_commitment: e.target.checked }))} 
+                  className="w-5 h-5 accent-orange-700 cursor-pointer" 
+                  id="log-commit-check" 
+                />
+                <label htmlFor="log-commit-check" className="text-stone-400 text-xs font-bold select-none cursor-pointer">
+                  Save as Studio Commitment
+                </label>
+              </div>
             </div>
           )}
         </section>

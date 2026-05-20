@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArtistProfile as ArtistProfileType, Project, WorkshopLog } from '../types';
-import { RainbowPicker } from './RainbowPicker';
+import { SpectrumPicker } from './SpectrumPicker';
 import { useStore } from '../store/useStore';
 
 interface ArtistProfileProps {
@@ -344,7 +344,7 @@ const ArtistProfile: React.FC<ArtistProfileProps> = ({ profile, projects, logs, 
                   <button onClick={() => setActiveColorTab('style')} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeColorTab === 'style' ? 'bg-stone-800 text-orange-500' : 'text-stone-600'}`}>Style</button>
                 </div>
                 <div className="pt-2">
-                  <RainbowPicker label={activeColorTab === 'discipline' ? "DisciplineSpectrum" : "Style Spectrum"} color={activeColorTab === 'discipline' ? localProfile.disciplineColor : localProfile.styleColor} onChange={(c) => setLocalProfile(p => activeColorTab === 'discipline' ? ({ ...p, disciplineColor: c }) : ({ ...p, styleColor: c }))} />
+                  <SpectrumPicker label={activeColorTab === 'discipline' ? "Discipline Spectrum" : "Style Spectrum"} color={activeColorTab === 'discipline' ? localProfile.disciplineColor : localProfile.styleColor} onChange={(c) => setLocalProfile(p => activeColorTab === 'discipline' ? ({ ...p, disciplineColor: c }) : ({ ...p, styleColor: c }))} />
                 </div>
               </div>
             )}

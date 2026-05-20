@@ -582,8 +582,9 @@ export const useStore = () => {
     }
   };
 
-  const addLog = async (log: Omit<WorkshopLog, 'id'>) => {
-    const finalLog: WorkshopLog = { ...log, id: Math.random().toString(36).substr(2, 9), audio_base64: null }; // Ensure audio is NEVER saved to sessions
+  const addLog = async (log: Omit<WorkshopLog, 'id'> & { save_as_commitment?: boolean }) => {
+    const { save_as_commitment, ...logData } = log;
+    const finalLog: WorkshopLog = { ...logData, id: Math.random().toString(36).substr(2, 9), audio_base64: null }; // Ensure audio is NEVER saved to sessions
     const duration = log.actual_duration_minutes || log.duration_minutes || 0;
     
     if (currentUser) {
@@ -595,6 +596,34 @@ export const useStore = () => {
         // We still keep the transcript and other metadata.
         
         await setDoc(doc(db, 'users', userId, 'sessions', finalLog.id), sanitizeForFirestore(finalLog));
+        
+        // Save under project-specific session subcollection
+        if (finalLog.project_id) {
+          await setDoc(doc(db, 'users', userId, 'projects', finalLog.project_id, 'sessions', finalLog.id), sanitizeForFirestore(finalLog));
+        }
+
+        // Auto-save next_steps as a Commitment in Firestore
+        if (finalLog.next_steps && finalLog.next_steps.trim() !== '' && finalLog.next_steps.trim().toLowerCase() !== 'none detected.' && save_as_commitment !== false) {
+          const commitmentId = Math.random().toString(36).substr(2, 9);
+          const dateStr = finalLog.date ? finalLog.date.split('T')[0] : new Date().toISOString().split('T')[0];
+          
+          const titleText = finalLog.next_steps.length > 50 
+            ? `${finalLog.next_steps.substring(0, 47)}...` 
+            : finalLog.next_steps;
+
+          const commitment = {
+            id: commitmentId,
+            title: titleText,
+            date: dateStr,
+            type: 'session' as any,
+            project_id: finalLog.project_id,
+            project_name: finalLog.project_name,
+            reminder_set: false,
+            notes: `Auto-generated from session notes: ${finalLog.next_steps}`
+          };
+          
+          await setDoc(doc(db, 'users', userId, 'calendarEvents', commitmentId), sanitizeForFirestore(commitment));
+        }
         
         const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', log.project_id));
         if (projectDoc.exists()) {
@@ -620,7 +649,8 @@ export const useStore = () => {
     }
   };
 
-  const updateLog = async (id: string, updates: Partial<WorkshopLog>) => {
+  const updateLog = async (id: string, updates: Partial<WorkshopLog> & { save_as_commitment?: boolean }) => {
+    const { save_as_commitment, ...updateData } = updates;
     if (currentUser) {
       const userId = currentUser.uid;
       const path = `users/${userId}/sessions/${id}`;
@@ -629,11 +659,39 @@ export const useStore = () => {
         if (!logDoc.exists()) return;
         
         const oldLog = logDoc.data() as WorkshopLog;
-        await updateDoc(doc(db, 'users', userId, 'sessions', id), sanitizeForFirestore(updates));
+        await updateDoc(doc(db, 'users', userId, 'sessions', id), sanitizeForFirestore(updateData));
         
+        // Also update subcollection
+        if (oldLog.project_id) {
+          await setDoc(doc(db, 'users', userId, 'projects', oldLog.project_id, 'sessions', id), sanitizeForFirestore({ ...oldLog, ...updateData }), { merge: true });
+        }
+
+        // Auto-save updated next_steps as a Commitment in Firestore if they are modified
+        if (updateData.next_steps && updateData.next_steps.trim() !== '' && updateData.next_steps.trim().toLowerCase() !== 'none detected.' && save_as_commitment !== false && updateData.next_steps !== oldLog.next_steps) {
+          const commitmentId = Math.random().toString(36).substr(2, 9);
+          const dateStr = updateData.date ? updateData.date.split('T')[0] : (oldLog.date ? oldLog.date.split('T')[0] : new Date().toISOString().split('T')[0]);
+          
+          const titleText = updateData.next_steps.length > 50 
+            ? `${updateData.next_steps.substring(0, 47)}...` 
+            : updateData.next_steps;
+
+          const commitment = {
+            id: commitmentId,
+            title: titleText,
+            date: dateStr,
+            type: 'session' as any,
+            project_id: updateData.project_id || oldLog.project_id,
+            project_name: updateData.project_name || oldLog.project_name,
+            reminder_set: false,
+            notes: `Auto-generated from session updates: ${updateData.next_steps}`
+          };
+          
+          await setDoc(doc(db, 'users', userId, 'calendarEvents', commitmentId), sanitizeForFirestore(commitment));
+        }
+
         const oldDuration = oldLog.actual_duration_minutes || oldLog.duration_minutes || 0;
-        const newDuration = updates.actual_duration_minutes !== undefined ? updates.actual_duration_minutes : 
-                            (updates.duration_minutes !== undefined ? updates.duration_minutes : oldDuration);
+        const newDuration = updateData.actual_duration_minutes !== undefined ? updateData.actual_duration_minutes : 
+                            (updateData.duration_minutes !== undefined ? updateData.duration_minutes : oldDuration);
         
         if (oldDuration !== newDuration) {
           const projectDoc = await getDoc(doc(db, 'users', userId, 'projects', oldLog.project_id));
